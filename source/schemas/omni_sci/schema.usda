@@ -1,0 +1,226 @@
+#usda 1.0
+(
+    """
+    USD schemas for scientific datasets: format-agnostic base types for
+    describing CAE simulation fields and their backing arrays in OpenUSD.
+
+    Schemas defined here:
+
+    \\li \\em OmniSciDataset -- concrete typed prim that anchors a simulation
+        dataset (one prim per dataset; stores no data itself).
+    \\li \\em OmniSciArrayAPI -- multiple-apply API that records where a named
+        array's data resides (compute device, memory kind).
+    \\li \\em OmniSciFieldAPI -- multiple-apply API that records metadata for a
+        named scalar or vector field (original solver name, mesh association).
+
+    The OmniSci schemas intentionally carry no file-format-specific attributes.
+    Format adapters (CGNS, Nastran, OpenFOAM, ...) are expected to extend or
+    companion these base types via their own API schemas.
+    """
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "omniSci"
+        string libraryPath = "omniSci"
+        string libraryPrefix = "OmniSci"
+        bool useLiteralIdentifier = true
+    }
+)
+{
+}
+
+class OmniSciDataset "OmniSciDataset" (
+    inherits = </Typed>
+    customData = {
+        string className = "Dataset"
+    }
+    doc = """Anchor prim for a scientific simulation dataset.
+
+    OmniSciDataset marks a location in the scene graph as the root of one
+    logical dataset -- for example a single CFD solution, an FEA result set,
+    or a time-series of field snapshots. The prim itself carries no field
+    data; data is described by applying \\em OmniSciFieldAPI and
+    \\em OmniSciArrayAPI instances to it or to its descendants.
+
+    <b>Composition pattern</b>
+
+    A dataset with two fields (velocity and pressure) looks like:
+
+    \\code
+    def OmniSciDataset "SimResult" (
+        prepend apiSchemas = [
+            "OmniSciFieldAPI:velocity",
+            "OmniSciArrayAPI:velocity",
+            "OmniSciFieldAPI:pressure",
+            "OmniSciArrayAPI:pressure"
+        ]
+    )
+    {
+        uniform string omni:sci:field:velocity:name        = "U"
+        uniform token  omni:sci:field:velocity:association = "node"
+        token          omni:sci:array:velocity:device      = "cuda"
+
+        uniform string omni:sci:field:pressure:name        = "p"
+        uniform token  omni:sci:field:pressure:association = "element"
+        token          omni:sci:array:pressure:device      = "cpu"
+    }
+    \\endcode
+
+    <b>Relationship to file-format schemas</b>
+
+    File-format-specific schemas (e.g. OmniSciCgns, OmniNastran) should apply
+    their own API schemas alongside OmniSciFieldAPI / OmniSciArrayAPI on the
+    same OmniSciDataset prim. Inheritance from OmniSciDataset is discouraged;
+    prefer composition so that format-specific attributes remain separable from
+    the base dataset semantics.
+    """
+)
+{
+}
+
+class "OmniSciArrayAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "ArrayAPI"
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix = "omni:sci:array"
+        # Restrict to OmniSciDataset once file-format schemas are stabilised.
+        # token[] apiSchemaCanOnlyApplyTo = ["OmniSciDataset"]
+    }
+    doc = """Multiple-apply API schema that describes where a named array
+    is resident and how it should be accessed.
+
+    One instance of OmniSciArrayAPI is applied per logical array. The
+    \\em instance name is the shared key that links this descriptor to the
+    corresponding \\em OmniSciFieldAPI instance on the same prim. Instance
+    names should be valid USD identifiers and are conventionally lowercase
+    (e.g. "velocity", "pressure", "temperature").
+
+    Apply using:
+
+    \\code
+    prepend apiSchemas = ["OmniSciArrayAPI:<instanceName>"]
+    \\endcode
+
+    <b>Instance name convention</b>
+
+    The instance name should match the OmniSciFieldAPI instance name for the
+    same field, forming a one-to-one relationship:
+
+    \\code
+    "OmniSciFieldAPI:velocity"  <->  "OmniSciArrayAPI:velocity"
+    \\endcode
+    """
+)
+{
+    token device (
+        doc = """Specifies the compute device on which this array's data is
+        currently resident.
+
+        This attribute is advisory: it does not itself transfer data between
+        devices, but allows consumers to choose an access path that avoids
+        unnecessary host/device copies.
+
+        Common values:
+
+        \\li \\em "cpu"  -- data is in host (CPU) memory
+        \\li \\em "cuda" -- data is in CUDA device (GPU) memory
+        \\li \\em "gpu"  -- data is in GPU memory (device-agnostic)
+
+        The attribute is a free token with no fixed allowedTokens so that
+        future device kinds (e.g. "hip", "sycl") can be introduced without
+        a schema version bump.
+        """
+        displayName = "Device"
+        displayGroup = "Sci Array"
+    )
+}
+
+class "OmniSciFieldAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "FieldAPI"
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix = "omni:sci:field"
+        # Restrict to OmniSciDataset once file-format schemas are stabilised.
+        # token[] apiSchemaCanOnlyApplyTo = ["OmniSciDataset"]
+    }
+    doc = """Multiple-apply API schema that records metadata for a named
+    scalar or vector field on an OmniSciDataset prim.
+
+    A \\em field is a quantity defined over a simulation domain -- for example
+    velocity, pressure, stress, or temperature. Each instance of
+    OmniSciFieldAPI describes one such field. The \\em instance name is the
+    USD-level identifier for the field and is used as the key to retrieve
+    the field from the dataset.
+
+    Apply using:
+
+    \\code
+    prepend apiSchemas = ["OmniSciFieldAPI:<instanceName>"]
+    \\endcode
+
+    <b>Instance name vs. field name</b>
+
+    The instance name is a USD identifier chosen by the schema author; it
+    may differ from the solver's native variable name, which is preserved
+    separately in the \\em name attribute. For example, an OpenFOAM field
+    named "U" could be exposed under the instance name "velocity".
+
+    <b>Pairing with OmniSciArrayAPI</b>
+
+    For each OmniSciFieldAPI instance there should be a corresponding
+    OmniSciArrayAPI instance with the same instance name. OmniSciFieldAPI
+    carries the semantic metadata; OmniSciArrayAPI carries the storage
+    descriptor.
+    """
+)
+{
+    uniform string name (
+        doc = """The original name of this field as it appears in the source
+        dataset or solver output file.
+
+        This preserves the solver's native variable name independently of the
+        USD instance name. Consumers that need to look up field data in the
+        source file (e.g. through a file-format plugin) should use this
+        attribute rather than the instance name.
+
+        Example: an OpenFOAM velocity field is stored under the name "U" in
+        the case directory. The OmniSciFieldAPI instance might use the instance
+        name "velocity" for readability while this attribute retains "U" to
+        allow the file-format plugin to locate the correct data.
+        """
+        displayName = "Name"
+        displayGroup = "Sci Field"
+    )
+
+    uniform token association = "none" (
+        allowedTokens = [ "none", "node", "element" ]
+        doc = """Specifies which mesh element type the field values are
+        associated with.
+
+        \\li \\em "none"    -- the field has no topological association with mesh
+            elements. Use for global scalars, material constants, or fields
+            that are not spatially discretised on a mesh.
+        \\li \\em "node"    -- one value per mesh node (vertex). Equivalent to a
+            per-vertex primvar on a UsdGeomMesh. Common for displacement,
+            velocity, and nodal temperature in FEA; for velocity and pressure
+            on collocated CFD grids.
+        \\li \\em "element" -- one value per mesh element (cell/face). Equivalent
+            to a per-face or per-cell primvar. Common for elemental stress and
+            strain in FEA; for cell-centred pressure and density in CFD.
+
+        Consumers mapping OmniSci fields to USD primvars should use this
+        attribute to choose the correct interpolation token
+        (\\em vertex for "node", \\em uniform for "element").
+        """
+        displayName = "Association"
+        displayGroup = "Sci Field"
+    )
+}

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<VTKFile type="StructuredGrid" version="1.0" byte_order="LittleEndian" header_type="UInt32">
+  <StructuredGrid WholeExtent="0 1 0 1 0 0">
+    <Piece Extent="0 1 0 1 0 0">
+      <PointData Scalars="temperature">
+        <DataArray type="Float32" Name="temperature" format="ascii">10 20 30 40</DataArray>
+      </PointData>
+      <CellData/>
+      <Points>
+        <DataArray type="Float32" NumberOfComponents="3" format="ascii">
+          0 0 0  1 0 0  0 1 0  1 1 0
+        </DataArray>
+      </Points>
+    </Piece>
+  </StructuredGrid>
+</VTKFile>

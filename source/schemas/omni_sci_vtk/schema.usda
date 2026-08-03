@@ -1,0 +1,279 @@
+#usda 1.0
+(
+    """
+    USD schemas for VTK dataset topology and metadata.
+
+    Schemas defined here:
+
+    \\li \\em OmniSciVtkUnstructuredGridAPI -- single-apply API that marks a
+        prim as a VTK unstructured grid dataset.
+    \\li \\em OmniSciVtkStructuredGridAPI -- single-apply API that marks a prim
+        as a VTK structured grid dataset.
+    \\li \\em OmniSciVtkImageDataAPI -- single-apply API that marks a prim as a
+        VTK image-data dataset.
+    \\li \\em OmniSciVtkRectilinearGridAPI -- single-apply API that marks a
+        prim as a VTK rectilinear-grid dataset.
+    \\li \\em OmniSciVtkPolyDataAPI -- single-apply API that marks a prim as a
+        VTK poly-data dataset.
+
+    These APIs are intended to be composed with \\em OmniSciDataset,
+    \\em OmniSciArrayAPI, and \\em OmniSciFieldAPI. This repository does not
+    mirror the old kit-cae \\em CaeVtkFieldArray typed schema; instead, VTK
+    arrays are expressed as standard \\em OmniSciArrayAPI instances using the
+    VTK-specific library tokens declared below.
+    """
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "omniSciVtk"
+        string libraryPath = "omniSciVtk"
+        string libraryPrefix = "OmniSciVtk"
+        bool useLiteralIdentifier = true
+        dictionary libraryTokens = {
+            dictionary points = {
+                string doc = "OmniSciArrayAPI instance name for VTK points coordinates."
+            }
+            dictionary connectivityOffsets = {
+                string doc = "OmniSciArrayAPI instance name for vtkCellArray offsets on an unstructured grid."
+            }
+            dictionary connectivityArray = {
+                string doc = "OmniSciArrayAPI instance name for vtkCellArray connectivity on an unstructured grid."
+            }
+            dictionary connectivityPackedArray = {
+                string doc = "OmniSciArrayAPI instance name for legacy packed vtkCellArray data on an unstructured grid."
+            }
+            dictionary cellTypes = {
+                string doc = "OmniSciArrayAPI instance name for VTK cell types on an unstructured grid."
+            }
+            dictionary xCoordinates = {
+                string doc = "OmniSciArrayAPI instance name for rectilinear-grid X coordinates."
+            }
+            dictionary yCoordinates = {
+                string doc = "OmniSciArrayAPI instance name for rectilinear-grid Y coordinates."
+            }
+            dictionary zCoordinates = {
+                string doc = "OmniSciArrayAPI instance name for rectilinear-grid Z coordinates."
+            }
+            dictionary polyhedronFacesOffsets = {
+                string doc = "OmniSciArrayAPI instance name for polyhedron face-offsets on an unstructured grid."
+            }
+            dictionary polyhedronFacesConnectivityArray = {
+                string doc = "OmniSciArrayAPI instance name for polyhedron face connectivity on an unstructured grid."
+            }
+            dictionary polyhedronFaceLocationsOffsets = {
+                string doc = "OmniSciArrayAPI instance name for polyhedron face-location offsets on an unstructured grid."
+            }
+            dictionary polyhedronFaceLocationsConnectivityArray = {
+                string doc = "OmniSciArrayAPI instance name for polyhedron face-location connectivity on an unstructured grid."
+            }
+            dictionary polyhedronPackedFaces = {
+                string doc = "OmniSciArrayAPI instance name for VTK XML legacy packed polyhedron faces."
+            }
+            dictionary polyhedronPackedFaceOffsets = {
+                string doc = "OmniSciArrayAPI instance name for VTK XML legacy packed polyhedron face offsets."
+            }
+            dictionary vertsConnectivityOffsets = {
+                string doc = "OmniSciArrayAPI instance name for vtkPolyData verts offsets."
+            }
+            dictionary vertsConnectivityArray = {
+                string doc = "OmniSciArrayAPI instance name for vtkPolyData verts connectivity."
+            }
+            dictionary vertsPackedConnectivityArray = {
+                string doc = "OmniSciArrayAPI instance name for legacy packed vtkPolyData verts connectivity."
+            }
+            dictionary linesConnectivityOffsets = {
+                string doc = "OmniSciArrayAPI instance name for vtkPolyData lines offsets."
+            }
+            dictionary linesConnectivityArray = {
+                string doc = "OmniSciArrayAPI instance name for vtkPolyData lines connectivity."
+            }
+            dictionary linesPackedConnectivityArray = {
+                string doc = "OmniSciArrayAPI instance name for legacy packed vtkPolyData lines connectivity."
+            }
+            dictionary polysConnectivityOffsets = {
+                string doc = "OmniSciArrayAPI instance name for vtkPolyData polys offsets."
+            }
+            dictionary polysConnectivityArray = {
+                string doc = "OmniSciArrayAPI instance name for vtkPolyData polys connectivity."
+            }
+            dictionary polysPackedConnectivityArray = {
+                string doc = "OmniSciArrayAPI instance name for legacy packed vtkPolyData polys connectivity."
+            }
+            dictionary stripsConnectivityOffsets = {
+                string doc = "OmniSciArrayAPI instance name for vtkPolyData strips offsets."
+            }
+            dictionary stripsConnectivityArray = {
+                string doc = "OmniSciArrayAPI instance name for vtkPolyData strips connectivity."
+            }
+            dictionary stripsPackedConnectivityArray = {
+                string doc = "OmniSciArrayAPI instance name for legacy packed vtkPolyData triangle-strip connectivity."
+            }
+        }
+    }
+)
+{
+}
+
+class "OmniSciVtkUnstructuredGridAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "UnstructuredGridAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks an \\em OmniSciDataset prim as
+    a VTK unstructured-grid dataset.
+
+    Geometry and topology arrays are carried on the same prim through
+    \\em OmniSciArrayAPI instances using the standard VTK instance names
+    declared in this library, including \\em points, \\em connectivityOffsets,
+    \\em connectivityArray, \\em connectivityPackedArray, \\em cellTypes, and
+    optional split or packed polyhedron support arrays.
+    """
+)
+{
+}
+
+class "OmniSciVtkStructuredGridAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "StructuredGridAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks an \\em OmniSciDataset prim as
+    a VTK structured-grid dataset.
+
+    Point coordinates are expected on the same prim through
+    \\em OmniSciArrayAPI:points. The structured-grid extents are recorded by
+    the \\em minExtent and \\em maxExtent attributes.
+    """
+)
+{
+    uniform int3 omni:vtk:minExtent = (0, 0, 0) (
+        doc = "Minimum VTK ijk extent of the structured grid."
+        displayName = "Min Extent"
+        displayGroup = "VTK Structured Grid"
+        customData = {
+            string apiName = "minExtent"
+        }
+    )
+
+    uniform int3 omni:vtk:maxExtent = (0, 0, 0) (
+        doc = "Maximum VTK ijk extent of the structured grid."
+        displayName = "Max Extent"
+        displayGroup = "VTK Structured Grid"
+        customData = {
+            string apiName = "maxExtent"
+        }
+    )
+}
+
+class "OmniSciVtkImageDataAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "ImageDataAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks an \\em OmniSciDataset prim as
+    a VTK image-data dataset.
+
+    Image data in VTK is defined by \\em origin, \\em spacing, and ijk extents.
+    Point coordinates are implicit rather than carried as a separate points
+    array.
+    """
+)
+{
+    uniform float3 omni:vtk:origin = (0.0, 0.0, 0.0) (
+        doc = "Origin of the VTK image-data dataset."
+        displayName = "Origin"
+        displayGroup = "VTK Image Data"
+        customData = {
+            string apiName = "origin"
+        }
+    )
+
+    uniform float3 omni:vtk:spacing = (1.0, 1.0, 1.0) (
+        doc = "Spacing of the VTK image-data dataset."
+        displayName = "Spacing"
+        displayGroup = "VTK Image Data"
+        customData = {
+            string apiName = "spacing"
+        }
+    )
+
+    uniform int3 omni:vtk:minExtent = (0, 0, 0) (
+        doc = "Minimum VTK ijk extent of the image-data dataset."
+        displayName = "Min Extent"
+        displayGroup = "VTK Image Data"
+        customData = {
+            string apiName = "minExtent"
+        }
+    )
+
+    uniform int3 omni:vtk:maxExtent = (0, 0, 0) (
+        doc = "Maximum VTK ijk extent of the image-data dataset."
+        displayName = "Max Extent"
+        displayGroup = "VTK Image Data"
+        customData = {
+            string apiName = "maxExtent"
+        }
+    )
+}
+
+class "OmniSciVtkRectilinearGridAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "RectilinearGridAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks an \\em OmniSciDataset prim as
+    a VTK rectilinear-grid dataset.
+
+    Rectilinear coordinates are expected on the same prim through
+    \\em OmniSciArrayAPI:xCoordinates, \\em OmniSciArrayAPI:yCoordinates, and
+    \\em OmniSciArrayAPI:zCoordinates. The rectilinear-grid extents are
+    recorded by the \\em minExtent and \\em maxExtent attributes.
+    """
+)
+{
+    uniform int3 omni:vtk:minExtent = (0, 0, 0) (
+        doc = "Minimum VTK ijk extent of the rectilinear-grid dataset."
+        displayName = "Min Extent"
+        displayGroup = "VTK Rectilinear Grid"
+        customData = {
+            string apiName = "minExtent"
+        }
+    )
+
+    uniform int3 omni:vtk:maxExtent = (0, 0, 0) (
+        doc = "Maximum VTK ijk extent of the rectilinear-grid dataset."
+        displayName = "Max Extent"
+        displayGroup = "VTK Rectilinear Grid"
+        customData = {
+            string apiName = "maxExtent"
+        }
+    )
+}
+
+class "OmniSciVtkPolyDataAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "PolyDataAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks an \\em OmniSciDataset prim as
+    a VTK poly-data dataset.
+
+    Geometry and the verts/lines/polys/strips topology arrays are carried on
+    the same prim through \\em OmniSciArrayAPI instances using the standard
+    VTK instance names declared in this library. Source files may provide either
+    split offsets/connectivity arrays or legacy packed connectivity arrays.
+    """
+)
+{
+}

@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+{
+    "Plugins": [
+        {
+            "Name": "omniSciFlashFileFormat",
+            "Type": "library",
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Info": {
+                "Types": {
+                    "OmniSciFlashFileFormat": {
+                        "bases": ["SdfFileFormat"],
+                        "displayName": "CAE FLASH AMR File Format",
+                        "extensions": ["flash"],
+                        "formatId": "OmniSciFlashFileFormat",
+                        "target": "usd",
+                        "primary": false,
+                        "FileFormatArguments": {
+                            "mountPath": {"doc": "Optional absolute SdfPath where the dataset root should be authored for sublayer composition. Default: derived from the descriptor filename stem."},
+                            "timeScale": {"doc": "Scale factor applied to the selected FLASH time source. Default: 1.0."},
+                            "timeOffset": {"doc": "Offset added after timeScale. Default: 0.0."},
+                            "timeSource": {"doc": "USD time ordinate source: 'TimeStep' (descriptor order; default), 'TimeValue' (stored physical time), or 'IterationValue' (stored nstep)."},
+                            "cacheMode": {"doc": "Lazy-array cache policy: 'all', 'static', or 'none'. Default: 'all'."}
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

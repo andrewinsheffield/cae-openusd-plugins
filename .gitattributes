@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+tpl_licenses/** whitespace=-trailing-space
+
+tests/data/*.cgns filter=lfs diff=lfs merge=lfs -text
+tests/data/*.npz  filter=lfs diff=lfs merge=lfs -text
+tests/data/OpenFOAM/squareBend/** filter=lfs diff=lfs merge=lfs -text
+tests/data/EDEM/** filter=lfs diff=lfs merge=lfs -text
+tests/data/EDEM/generate_minimal_edem.c !text !filter !merge !diff
+tests/data/VTK/*bin*.vtk filter=lfs diff=lfs merge=lfs -text
+tests/data/VTKXml/multicomb_0_polyhedra.vtu filter=lfs diff=lfs merge=lfs -text
+tests/data/value_clip_can/*.npz filter=lfs diff=lfs merge=lfs -text
+tests/data/value_clip_can/*.vtk filter=lfs diff=lfs merge=lfs -text
+tests/data/value_clip_can/*.vtu filter=lfs diff=lfs merge=lfs -text
+tests/data/reservoir/** filter=lfs diff=lfs merge=lfs -text
+tests/data/reservoir/generate.py !text !filter !merge !diff
+tests/data/reservoir/README.md !text !filter !merge !diff

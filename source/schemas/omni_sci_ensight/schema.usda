@@ -1,0 +1,141 @@
+#usda 1.0
+(
+    """
+    USD schemas for EnSight unstructured dataset topology.
+
+    Schemas defined here:
+
+    \\li \\em OmniSciEnSightPiece -- concrete typed prim schema for one EnSight
+        topology piece.
+    \\li \\em OmniSciEnSightUnstructuredPartAPI -- single-apply API that marks a
+        prim as an EnSight unstructured part and records its pieces.
+    \\li \\em OmniSciEnSightUnstructuredPieceAPI -- single-apply API that marks a
+        prim as one piece of an EnSight unstructured part and records its
+        element type.
+
+    These APIs are intended to be composed with \\em OmniSciDataset,
+    \\em OmniSciArrayAPI, and \\em OmniSciFieldAPI rather than introducing a
+    separate EnSight-specific array schema family.
+    """
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "omniSciEnSight"
+        string libraryPath = "omniSciEnSight"
+        string libraryPrefix = "OmniSciEnSight"
+        bool useLiteralIdentifier = true
+        dictionary libraryTokens = {
+            dictionary coordinatesX = {
+                string doc = "OmniSciArrayAPI instance name for the X coordinate array of an EnSight part."
+            }
+            dictionary coordinatesY = {
+                string doc = "OmniSciArrayAPI instance name for the Y coordinate array of an EnSight part."
+            }
+            dictionary coordinatesZ = {
+                string doc = "OmniSciArrayAPI instance name for the Z coordinate array of an EnSight part."
+            }
+            dictionary connectivity = {
+                string doc = "OmniSciArrayAPI instance name for an EnSight piece connectivity array."
+            }
+            dictionary elementNodeCounts = {
+                string doc = "OmniSciArrayAPI instance name for per-element node counts on an nsided EnSight piece."
+            }
+            dictionary elementFaceCounts = {
+                string doc = "OmniSciArrayAPI instance name for per-element face counts on an nfaced EnSight piece."
+            }
+            dictionary faceNodeCounts = {
+                string doc = "OmniSciArrayAPI instance name for per-face node counts on an nfaced EnSight piece."
+            }
+        }
+    }
+)
+{
+}
+
+class OmniSciEnSightPiece "OmniSciEnSightPiece" (
+    inherits = </Typed>
+    customData = {
+        string className = "Piece"
+    }
+    doc = """Concrete typed prim schema for one EnSight topology piece.
+
+    OmniSciEnSightPiece is a lightweight anchor prim for topology blocks within
+    an EnSight part. It carries no built-in properties of its own; EnSight-
+    specific metadata is added by applying \\em OmniSciEnSightUnstructuredPieceAPI,
+    while backing arrays such as connectivity and polyhedral count arrays are
+    added with \\em OmniSciArrayAPI instances.
+    """
+)
+{
+}
+
+class "OmniSciEnSightUnstructuredPartAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "UnstructuredPartAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks a prim as an EnSight unstructured part.
+
+    Apply this schema to an \\em OmniSciDataset prim that represents one EnSight
+    part. Shared point coordinates are expected to live directly on the same
+    prim via \\em OmniSciArrayAPI instances such as \\em coordinatesX,
+    \\em coordinatesY, and \\em coordinatesZ. The pieces relationship targets
+    the child prims that represent the part's topology blocks.
+    """
+)
+{
+    uniform int omni:ensight:part:id (
+        doc = "The part id as authored in the EnSight geometry file."
+        displayName = "Part Id"
+        displayGroup = "EnSight Unstructured Part"
+        customData = {
+            string apiName = "id"
+        }
+    )
+
+    rel omni:ensight:part:pieces (
+        doc = "Targets the child prims that represent the pieces belonging to this part."
+        displayName = "Pieces"
+        displayGroup = "EnSight Unstructured Part"
+        customData = {
+            string apiName = "pieces"
+        }
+    )
+}
+
+class "OmniSciEnSightUnstructuredPieceAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "UnstructuredPieceAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks a prim as one EnSight unstructured piece.
+
+    Apply this schema to an \\em OmniSciEnSightPiece prim for one element block
+    of an EnSight part. Piece array data such as connectivity and count arrays
+    are carried by
+    \\em OmniSciArrayAPI instances on the same prim.
+    """
+)
+{
+    uniform token omni:ensight:piece:elementType (
+        allowedTokens = [
+            "point", "bar2", "bar3", "tria3", "tria6", "quad4", "quad8",
+            "tetra4", "tetra10", "pyramid5", "pyramid13", "penta6", "penta15",
+            "hexa8", "hexa20", "nsided", "nfaced"
+        ]
+        doc = "The EnSight element type represented by this piece."
+        displayName = "Element Type"
+        displayGroup = "EnSight Unstructured Piece"
+        customData = {
+            string apiName = "elementType"
+        }
+    )
+}

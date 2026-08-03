@@ -1,0 +1,15 @@
+#usda 1.0
+
+def "Can"
+{
+    float[] omni:sci:array:cell_eqps:value
+    float[] omni:sci:array:point_accl_x:value
+    float[] omni:sci:array:point_accl_y:value
+    float[] omni:sci:array:point_accl_z:value
+    float[] omni:sci:array:point_displ_x:value
+    float[] omni:sci:array:point_displ_y:value
+    float[] omni:sci:array:point_displ_z:value
+    float[] omni:sci:array:point_vel_x:value
+    float[] omni:sci:array:point_vel_y:value
+    float[] omni:sci:array:point_vel_z:value
+}

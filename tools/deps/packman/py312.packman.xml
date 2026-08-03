@@ -1,0 +1,11 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<project toolsVersion="5.0">
+  <!-- Python-only setup profile for CI CTest drivers. -->
+
+  <dependency name="python" linkPath="${root}/_build/host-deps/python">
+    <package name="python" version="3.12.13+nv1-${platform_abi}" />
+  </dependency>
+
+</project>

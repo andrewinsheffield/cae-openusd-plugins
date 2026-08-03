@@ -1,0 +1,299 @@
+#usda 1.0
+(
+    """
+    USD schemas for CGNS (CFD General Notation System) data.
+
+    Schemas defined here:
+
+    \\li \\em OmniSciCgnsZoneAPI -- single-apply API that marks a prim as a CGNS
+        zone and records its grid coordinates, sections, and flow solutions.
+    \\li \\em OmniSciCgnsGridCoordinatesAPI -- single-apply API that marks a prim
+        as a CGNS GridCoordinates node.
+    \\li \\em OmniSciCgnsFlowSolutionAPI -- single-apply API that records the grid
+        location of a CGNS FlowSolution node.
+    \\li \\em OmniSciCgnsUnstructuredElementsAPI -- single-apply API that describes
+        an unstructured element section (element type, range, boundary size).
+
+    These schemas carry no dependency on OmniSci; they can be applied to any
+    prim type. When used together with the OmniSci schemas, apply the
+    OmniSciFieldAPI / OmniSciArrayAPI instances on the prim that represents
+    the same CGNS node.
+    """
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "omniSciCgns"
+        string libraryPath = "omniSciCgns"
+        string libraryPrefix = "OmniSciCgns"
+        bool useLiteralIdentifier = true
+        dictionary libraryTokens = {
+            dictionary elementConnectivity = {
+                string doc = "Instance name used for element connectivity arrays."
+            }
+            dictionary elementStartOffset = {
+                string doc = "Instance name used for element start offset arrays."
+            }
+            dictionary gridCoordinatesX = {
+                string doc = "Instance name used for X grid coordinate arrays."
+            }
+            dictionary gridCoordinatesY = {
+                string doc = "Instance name used for Y grid coordinate arrays."
+            }
+            dictionary gridCoordinatesZ = {
+                string doc = "Instance name used for Z grid coordinate arrays."
+            }
+        }
+    }
+)
+{
+}
+
+class "OmniSciCgnsZoneAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "ZoneAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks a prim as the root of a CGNS zone.
+
+    A CGNS zone groups a mesh topology, its sections (element connectivity
+    blocks), one or more grid-coordinate nodes, and one or more flow solutions.
+    Apply this schema to the prim that represents the zone root and populate the
+    relationships to point at the grid-coordinate, section, and flow-solution
+    prims.
+
+    Apply using:
+
+    \\code
+    prepend apiSchemas = ["OmniSciCgnsZoneAPI"]
+    \\endcode
+    """
+)
+{
+    rel omni:cgns:zone:gridCoordinates (
+        doc = """Targets the grid-coordinate prims belonging to this zone.
+
+        Each target should have \\em OmniSciCgnsGridCoordinatesAPI applied.
+        """
+        displayName = "Grid Coordinates"
+        displayGroup = "CGNS Zone"
+        customData = {
+            string apiName = "gridCoordinates"
+        }
+    )
+
+    rel omni:cgns:zone:sections (
+        doc = """Targets the section prims belonging to this zone.
+
+        Each target should have \\em OmniSciCgnsUnstructuredElementsAPI applied.
+        """
+        displayName = "Sections"
+        displayGroup = "CGNS Zone"
+        customData = {
+            string apiName = "sections"
+        }
+    )
+
+    rel omni:cgns:zone:flowSolutions (
+        doc = """Targets the flow-solution prims belonging to this zone.
+
+        Each target should have \\em OmniSciCgnsFlowSolutionAPI applied.
+        """
+        displayName = "Flow Solutions"
+        displayGroup = "CGNS Zone"
+        customData = {
+            string apiName = "flowSolutions"
+        }
+    )
+}
+
+class "OmniSciCgnsGridCoordinatesAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "GridCoordinatesAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks a prim as a CGNS GridCoordinates node.
+
+    A CGNS GridCoordinates node stores the coordinate arrays for a zone.
+    Coordinate values are represented by \\em OmniSciArrayAPI instances applied
+    to the same prim, using the standard gridCoordinatesX/Y/Z instance names.
+
+    Apply using:
+
+    \\code
+    prepend apiSchemas = ["OmniSciCgnsGridCoordinatesAPI"]
+    \\endcode
+    """
+)
+{
+}
+
+class "OmniSciCgnsFlowSolutionAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "FlowSolutionAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that records metadata for a CGNS FlowSolution node.
+
+    A CGNS FlowSolution stores one set of field data (e.g. a single time step
+    or iteration) at a particular grid location.  This schema captures the
+    grid location so that consumers can determine the interpolation type
+    without parsing the source CGNS file.
+
+    Apply using:
+
+    \\code
+    prepend apiSchemas = ["OmniSciCgnsFlowSolutionAPI"]
+    \\endcode
+    """
+)
+{
+    uniform token omni:cgns:flow_solution:gridLocation = "Vertex" (
+        allowedTokens = [
+            "Vertex",
+            "CellCenter",
+            "IFaceCenter",
+            "JFaceCenter",
+            "KFaceCenter",
+            "FaceCenter",
+            "EdgeCenter"
+        ]
+        doc = """The CGNS GridLocation value for this flow solution.
+
+        Indicates which mesh element type the field values are associated with:
+
+        \\li \\em "Vertex"      -- values at mesh vertices (nodes).
+        \\li \\em "CellCenter"  -- values at cell centres.
+        \\li \\em "IFaceCenter" -- values at i-direction face centres (structured grids).
+        \\li \\em "JFaceCenter" -- values at j-direction face centres (structured grids).
+        \\li \\em "KFaceCenter" -- values at k-direction face centres (structured grids).
+        \\li \\em "FaceCenter"  -- values at face centres (unstructured grids).
+        \\li \\em "EdgeCenter"  -- values at edge centres.
+
+        Consumers mapping CGNS fields to USD primvars should use this attribute
+        to choose the correct interpolation token
+        (\\em vertex for "Vertex", \\em uniform for "CellCenter"/"FaceCenter").
+        """
+        displayName = "Grid Location"
+        displayGroup = "CGNS Flow Solution"
+        customData = {
+            string apiName = "gridLocation"
+        }
+    )
+}
+
+class "OmniSciCgnsUnstructuredElementsAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "UnstructuredElementsAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that describes a CGNS unstructured element section.
+
+    In CGNS an \\em Elements_t node records a block of elements of a single
+    type (or MIXED) with a contiguous index range.  This schema captures the
+    CGNS element type token, the element index range, and the boundary
+    element count so that consumers can reconstruct mesh connectivity without
+    re-reading the source file.
+
+    Apply using:
+
+    \\code
+    prepend apiSchemas = ["OmniSciCgnsUnstructuredElementsAPI"]
+    \\endcode
+    """
+)
+{
+    uniform token omni:cgns:unstructured_elements:elementType = "ElementTypeNull" (
+        allowedTokens = [
+            "ElementTypeNull", "ElementTypeUserDefined",
+            "NODE",
+            "BAR_2", "BAR_3", "BAR_4", "BAR_5",
+            "TRI_3", "TRI_6", "TRI_9", "TRI_10", "TRI_12", "TRI_15",
+            "QUAD_4", "QUAD_8", "QUAD_9", "QUAD_12", "QUAD_16", "QUAD_P4_16", "QUAD_25",
+            "TETRA_4", "TETRA_10", "TETRA_16", "TETRA_20", "TETRA_22", "TETRA_34", "TETRA_35",
+            "PYRA_5", "PYRA_13", "PYRA_14", "PYRA_21", "PYRA_29", "PYRA_30",
+                "PYRA_P4_29", "PYRA_50", "PYRA_55",
+            "PENTA_6", "PENTA_15", "PENTA_18", "PENTA_24", "PENTA_33", "PENTA_38",
+                "PENTA_40", "PENTA_66", "PENTA_75",
+            "HEXA_8", "HEXA_20", "HEXA_27", "HEXA_32", "HEXA_44", "HEXA_56", "HEXA_64",
+                "HEXA_98", "HEXA_125",
+            "MIXED", "NGON_n", "NFACE_n"
+        ]
+        doc = """The CGNS ElementType_t value for this section.
+
+        Identifies the element topology.  Common values:
+
+        \\li \\em "NODE"     -- point elements.
+        \\li \\em "BAR_2"    -- linear edge (2 nodes).
+        \\li \\em "TRI_3"    -- linear triangle (3 nodes).
+        \\li \\em "QUAD_4"   -- linear quadrilateral (4 nodes).
+        \\li \\em "TETRA_4"  -- linear tetrahedron (4 nodes).
+        \\li \\em "PYRA_5"   -- linear pyramid (5 nodes).
+        \\li \\em "PENTA_6"  -- linear pentahedron / wedge (6 nodes).
+        \\li \\em "HEXA_8"   -- linear hexahedron (8 nodes).
+        \\li \\em "MIXED"    -- section contains elements of multiple types.
+        \\li \\em "NGON_n"   -- arbitrary polygon faces.
+        \\li \\em "NFACE_n"  -- arbitrary polyhedral cells.
+
+        The full token list covers all CGNS standard element types through
+        CGNS 4.x.
+        """
+        displayName = "Element Type"
+        displayGroup = "CGNS Unstructured Elements"
+        customData = {
+            string apiName = "elementType"
+        }
+    )
+
+    uniform int omni:cgns:unstructured_elements:elementSizeBoundary = 0 (
+        doc = """Number of boundary elements in this section.
+
+        Corresponds to the CGNS \\em ElementSizeBoundary parameter on an
+        Elements_t node.  Boundary elements appear first in the connectivity
+        array; interior elements follow.  A value of 0 means no boundary /
+        interior split is recorded.
+        """
+        displayName = "Element Size Boundary"
+        displayGroup = "CGNS Unstructured Elements"
+        customData = {
+            string apiName = "elementSizeBoundary"
+        }
+    )
+
+    uniform int2 omni:cgns:unstructured_elements:elementRange (
+        doc = """Inclusive index range [first, last] of elements in this section.
+
+        Corresponds to the CGNS \\em ElementRange node.  Indices are 1-based
+        and global within the zone.  Consumers can use this range to map a
+        global element index back to the section that owns it.
+        """
+        displayName = "Element Range"
+        displayGroup = "CGNS Unstructured Elements"
+        customData = {
+            string apiName = "elementRange"
+        }
+    )
+
+    rel omni:cgns:unstructured_elements:zone (
+        doc = """Relationship back to the zone prim that owns this section.
+
+        The target prim should have \\em OmniSciCgnsZoneAPI applied.  This
+        back-reference allows consumers to navigate from a section to its
+        parent zone without traversing the scene graph upward.
+        """
+        displayName = "Zone"
+        displayGroup = "CGNS Unstructured Elements"
+        customData = {
+            string apiName = "zone"
+        }
+    )
+}

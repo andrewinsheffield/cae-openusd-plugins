@@ -1,0 +1,133 @@
+#usda 1.0
+(
+    """
+    USD schemas for OpenFOAM polyMesh datasets.
+
+    Schemas defined here:
+
+    \\li \\em OmniSciOpenFoamPolyMeshAPI -- single-apply API that marks a prim
+        as an OpenFOAM polyMesh volume dataset.
+    \\li \\em OmniSciOpenFoamBoundaryPatchAPI -- single-apply API that records
+        patch metadata such as startFace, nFaces, and patch type.
+
+    These schemas are intended to be composed with \\em OmniSciDataset,
+    \\em OmniSciArrayAPI, and \\em OmniSciFieldAPI. Unlike face-vertex mesh
+    domains, OpenFOAM polyhedral topology is expressed through the
+    \\em faces, \\em facesOffsets, \\em owner, and \\em neighbour array
+    instances defined in this library rather than via \\em OmniSciCaeMeshAPI.
+    """
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "omniSciOpenFoam"
+        string libraryPath = "omniSciOpenFoam"
+        string libraryPrefix = "OmniSciOpenFoam"
+        bool useLiteralIdentifier = true
+        dictionary libraryTokens = {
+            dictionary points = {
+                string doc = "OmniSciArrayAPI instance name for the OpenFOAM points array."
+            }
+            dictionary faces = {
+                string doc = "OmniSciArrayAPI instance name for the flattened OpenFOAM face connectivity array."
+            }
+            dictionary facesOffsets = {
+                string doc = "OmniSciArrayAPI instance name for the OpenFOAM face-offset array."
+            }
+            dictionary owner = {
+                string doc = "OmniSciArrayAPI instance name for the OpenFOAM owner array."
+            }
+            dictionary neighbour = {
+                string doc = "OmniSciArrayAPI instance name for the OpenFOAM neighbour array."
+            }
+        }
+    }
+)
+{
+}
+
+class "OmniSciOpenFoamPolyMeshAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "PolyMeshAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks an \\em OmniSciDataset prim as
+    an OpenFOAM polyMesh volume dataset.
+
+    Mesh geometry and face topology are carried on the same prim through
+    \\em OmniSciArrayAPI instances using the standard OpenFOAM instance names
+    \\em points, \\em faces,
+    \\em facesOffsets, \\em owner, and \\em neighbour. Boundary patches are
+    represented as child \\em OmniSciDataset prims, and each patch points back
+    to its owning mesh through \\em OmniSciOpenFoamBoundaryPatchAPI.
+
+    \\em OmniSciCaeMeshAPI is not applied because OpenFOAM's native topology is
+    face-based rather than the face-vertex-count representation described by
+    that API.
+    """
+)
+{
+}
+
+class "OmniSciOpenFoamBoundaryPatchAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "BoundaryPatchAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that records metadata for an OpenFOAM
+    boundary patch.
+    """
+)
+{
+    rel omni:foam:patch:mesh (
+        doc = "Targets the owning OpenFOAM polyMesh dataset for this boundary patch."
+        displayName = "Mesh"
+        displayGroup = "OpenFOAM Boundary Patch"
+        customData = {
+            string apiName = "mesh"
+        }
+    )
+
+    uniform string omni:foam:patch:name (
+        doc = "Original OpenFOAM boundary patch name."
+        displayName = "Patch Name"
+        displayGroup = "OpenFOAM Boundary Patch"
+        customData = {
+            string apiName = "name"
+        }
+    )
+
+    uniform string omni:foam:patch:type (
+        doc = "OpenFOAM patch type token such as wall, patch, symmetryPlane, or empty."
+        displayName = "Patch Type"
+        displayGroup = "OpenFOAM Boundary Patch"
+        customData = {
+            string apiName = "type"
+        }
+    )
+
+    uniform int omni:foam:patch:startFace (
+        doc = "Starting face index of this patch in the parent mesh face list."
+        displayName = "Start Face"
+        displayGroup = "OpenFOAM Boundary Patch"
+        customData = {
+            string apiName = "startFace"
+        }
+    )
+
+    uniform int omni:foam:patch:nFaces (
+        doc = "Number of faces belonging to this patch."
+        displayName = "Number Of Faces"
+        displayGroup = "OpenFOAM Boundary Patch"
+        customData = {
+            string apiName = "nFaces"
+        }
+    )
+}

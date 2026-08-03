@@ -1,0 +1,21 @@
+FoamFile
+{
+    version 2.0;
+    format ascii;
+    class volScalarField;
+    location "2";
+    object T;
+}
+dimensions [0 0 0 0 0 0 0];
+internalField nonuniform List<scalar>
+1
+(
+    350
+)
+boundaryField
+{
+    walls
+    {
+        type zeroGradient;
+    }
+}

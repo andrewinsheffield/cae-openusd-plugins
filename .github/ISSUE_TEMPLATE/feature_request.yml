@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Feature request
+description: Suggest new or improved CAE OpenUSD Plugins functionality
+title: "[FEA]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the user problem or workflow limitation.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Requested capability
+      description: Describe the behavior or capability you would like.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Submission checks
+      options:
+        - label: I searched existing issues for duplicates.
+          required: true
+        - label: I understand that submitting a request does not commit NVIDIA to implementing it.
+          required: true
+        - label: I agree to follow this project's Code of Conduct.
+          required: true

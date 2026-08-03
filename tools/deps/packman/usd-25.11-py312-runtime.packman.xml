@@ -1,0 +1,14 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<project toolsVersion="5.0">
+  <!-- USD/Python-only runtime profile matching kit-110 (Kit 110.1.1). -->
+
+  <dependency name="usd-release" linkPath="${root}/_build/target-deps/usd/release">
+    <package name="usd.py312.${cae_packman_platform_abi}.stock.release" version="0.25.11.kit.2-gl.19811" />
+  </dependency>
+
+  <dependency name="python" linkPath="${root}/_build/target-deps/python">
+    <package name="python" version="3.12.13+nv1-${cae_packman_platform_abi}" />
+  </dependency>
+</project>

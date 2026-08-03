@@ -1,0 +1,76 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+[build-system]
+requires = ["scikit-build-core>=0.12"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "cae-openusd-plugins"
+dynamic = ["dependencies", "version"]
+description = "OpenUSD plugins for CAE schemas and file formats"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE.md" }
+authors = [{ name = "NVIDIA" }]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+]
+
+[project.optional-dependencies]
+numpy = ["numpy"]
+trimesh = ["numpy", "trimesh"]
+nvdb = ["numpy", "warp-lang"]
+test = ["pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://github.com/NVIDIA-Omniverse/cae-openusd-plugins"
+Issues = "https://github.com/NVIDIA-Omniverse/cae-openusd-plugins/issues"
+Changelog = "https://github.com/NVIDIA-Omniverse/cae-openusd-plugins/blob/main/CHANGELOG.md"
+
+[tool.scikit-build]
+minimum-version = "0.12"
+experimental = true
+cmake.version = ">=3.20"
+cmake.build-type = "Release"
+wheel.packages = ["python/cae_openusd_plugins"]
+wheel.platlib = true
+wheel.license-files = ["LICENSE.md"]
+wheel.exclude = [
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "include/**",
+    "bin/**",
+]
+
+[tool.scikit-build.cmake.define]
+CAE_BUILD_TESTS = "OFF"
+CAE_ENABLE_CPACK = "OFF"
+CAE_INSTALL_RPATH_USE_LINK_PATH = "OFF"
+CAE_INSTALL_WHEEL_LAYOUT = "ON"
+
+[tool.scikit-build.metadata.dependencies]
+provider = "cae_wheel_metadata"
+provider-path = "."
+
+[tool.scikit-build.metadata.version]
+provider = "cae_wheel_metadata"
+provider-path = "."
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Use -m "not integration" when you intentionally want only the fast
+# in-memory subset. The default test run covers the full suite.
+
+markers = [
+    "unit: fast in-memory tests (default)",
+    "integration: tests that read/write fixture files or require external plugins",
+]

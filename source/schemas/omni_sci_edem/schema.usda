@@ -1,0 +1,149 @@
+#usda 1.0
+(
+    """
+    USD schemas for EDEM decks, particle clouds, and related metadata.
+
+    Schemas defined here:
+
+    \\li \\em OmniSciEdemParticleCloudAPI -- single-apply API that marks a prim
+        as an EDEM particle cloud dataset and relates it to its prototype.
+    \\li \\em OmniSciEdemParticleTypeAPI -- single-apply API that records
+        metadata for one EDEM particle type prototype.
+    \\li \\em OmniSciEdemGeometryGroupAPI -- single-apply API that records
+        metadata for one EDEM geometry group mesh.
+
+    These schemas are intended to be composed with \\em OmniSciDataset,
+    \\em OmniSciCaePointCloudAPI, \\em OmniSciFieldAPI, and \\em OmniSciArrayAPI.
+    """
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "omniSciEdem"
+        string libraryPath = "omniSciEdem"
+        string libraryPrefix = "OmniSciEdem"
+        bool useLiteralIdentifier = true
+    }
+)
+{
+}
+
+class "OmniSciEdemParticleCloudAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "ParticleCloudAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks an \\em OmniSciDataset prim as
+    one EDEM particle cloud dataset.
+
+    Particle positions and fields are carried on the same prim through
+    \\em OmniSciCaePointCloudAPI, \\em OmniSciArrayAPI, and
+    \\em OmniSciFieldAPI. This API records the original particle type name and
+    a relationship back to the particle prototype prim that describes the
+    particle's shape.
+    """
+)
+{
+    rel omni:edem:particleCloud:prototype (
+        doc = "Targets the prototype prim that describes the shape for this particle cloud."
+        displayName = "Prototype"
+        displayGroup = "EDEM Particle Cloud"
+        customData = {
+            string apiName = "prototype"
+        }
+    )
+
+    uniform string omni:edem:particleCloud:name (
+        doc = "Original EDEM particle type name for this particle cloud."
+        displayName = "Name"
+        displayGroup = "EDEM Particle Cloud"
+        customData = {
+            string apiName = "name"
+        }
+    )
+
+    uniform string omni:edem:particleCloud:sourceNode (
+        doc = "Original EDEM particle type node identifier from the HDF5 source."
+        displayName = "Source Node"
+        displayGroup = "EDEM Particle Cloud"
+        customData = {
+            string apiName = "sourceNode"
+        }
+    )
+}
+
+class "OmniSciEdemParticleTypeAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "ParticleTypeAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that records metadata for one EDEM
+    particle type prototype.
+    """
+)
+{
+    uniform string omni:edem:particleType:name (
+        doc = "Original EDEM particle type name."
+        displayName = "Name"
+        displayGroup = "EDEM Particle Type"
+        customData = {
+            string apiName = "name"
+        }
+    )
+
+    uniform string omni:edem:particleType:sourceNode (
+        doc = "Original EDEM particle type node identifier from the HDF5 source."
+        displayName = "Source Node"
+        displayGroup = "EDEM Particle Type"
+        customData = {
+            string apiName = "sourceNode"
+        }
+    )
+
+    uniform token omni:edem:particleType:shapeKind = "unknown" (
+        allowedTokens = [ "unknown", "polyhedral", "sphereCluster" ]
+        doc = "Prototype shape kind for this EDEM particle type."
+        displayName = "Shape Kind"
+        displayGroup = "EDEM Particle Type"
+        customData = {
+            string apiName = "shapeKind"
+        }
+    )
+}
+
+class "OmniSciEdemGeometryGroupAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "GeometryGroupAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that records metadata for one EDEM
+    geometry group mesh.
+    """
+)
+{
+    uniform string omni:edem:geometryGroup:name (
+        doc = "Original EDEM geometry group name."
+        displayName = "Name"
+        displayGroup = "EDEM Geometry Group"
+        customData = {
+            string apiName = "name"
+        }
+    )
+
+    uniform string omni:edem:geometryGroup:sourceNode (
+        doc = "Original EDEM geometry group node identifier from the HDF5 source."
+        displayName = "Source Node"
+        displayGroup = "EDEM Geometry Group"
+        customData = {
+            string apiName = "sourceNode"
+        }
+    )
+}

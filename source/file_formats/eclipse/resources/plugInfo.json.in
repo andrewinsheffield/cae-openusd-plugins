@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+{
+    "Plugins": [
+        {
+            "Name": "omniSciEclipseFileFormat",
+            "Type": "library",
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Info": {
+                "Types": {
+                    "OmniSciGrdeclFileFormat": {
+                        "bases": ["SdfFileFormat"],
+                        "displayName": "CAE GRDECL File Format",
+                        "extensions": ["grdecl", "data"],
+                        "formatId": "OmniSciGrdeclFileFormat",
+                        "target": "usd",
+                        "primary": false,
+                        "FileFormatArguments": {
+                            "mountPath": {"doc": "Optional absolute SdfPath where the grid root should be authored for sublayer composition. Default: derived from the filename stem."},
+                            "cacheMode": {"doc": "Lazy-array cache policy: 'all' caches loaded values and 'static' or 'none' do not retain time-sampled values. Default: 'all'."}
+                        }
+                    },
+                    "OmniSciEgridFileFormat": {
+                        "bases": ["SdfFileFormat"],
+                        "displayName": "CAE EGRID File Format",
+                        "extensions": ["egrid"],
+                        "formatId": "OmniSciEgridFileFormat",
+                        "target": "usd",
+                        "primary": false,
+                        "FileFormatArguments": {
+                            "mountPath": {"doc": "Optional absolute SdfPath where the grid root should be authored for sublayer composition. Default: derived from the filename stem."},
+                            "cacheMode": {"doc": "Lazy-array cache policy: 'all' caches loaded values and 'static' or 'none' do not retain time-sampled values. Default: 'all'."}
+                        }
+                    },
+                    "OmniSciInitFileFormat": {
+                        "bases": ["SdfFileFormat"],
+                        "displayName": "CAE Eclipse INIT File Format",
+                        "extensions": ["init"],
+                        "formatId": "OmniSciInitFileFormat",
+                        "target": "usd",
+                        "primary": false,
+                        "FileFormatArguments": {
+                            "mountPath": {"doc": "Optional absolute SdfPath where the result root should be authored for sublayer composition. Default: derived from the filename stem."},
+                            "cacheMode": {"doc": "Lazy-array cache policy: 'all' caches loaded values and 'static' or 'none' do not retain time-sampled values. Default: 'all'."},
+                            "reservoirKeywordMode": {"doc": "Reservoir cell-property keyword selection: 'whitelist' exposes supported standard cell keywords, 'allCellSized' exposes all numeric records whose item count matches logical or active cell count. Default: 'whitelist'."}
+                        }
+                    },
+                    "OmniSciUnrstFileFormat": {
+                        "bases": ["SdfFileFormat"],
+                        "displayName": "CAE Eclipse UNRST File Format",
+                        "extensions": ["unrst"],
+                        "formatId": "OmniSciUnrstFileFormat",
+                        "target": "usd",
+                        "primary": false,
+                        "FileFormatArguments": {
+                            "mountPath": {"doc": "Optional absolute SdfPath where the result root should be authored for sublayer composition. Default: derived from the filename stem."},
+                            "cacheMode": {"doc": "Lazy-array cache policy: 'all' caches loaded values and 'static' or 'none' do not retain time-sampled values. Default: 'all'."},
+                            "reservoirKeywordMode": {"doc": "Reservoir cell-property keyword selection: 'whitelist' exposes supported standard stored result keywords, 'allCellSized' exposes all numeric records whose item count matches logical or active cell count. Default: 'whitelist'."},
+                            "timeScale": {"doc": "Multiplier applied to the selected time source. Default: 86400.0 so DOUBHEAD[0] in simulation days lands as simulation seconds."},
+                            "timeOffset": {"doc": "Additive offset (simulation seconds) applied after timeScale. Default: 0.0."},
+                            "timeSource": {"doc": "USD time-code source: 'TimeStep' (zero-based sample index), 'TimeValue' (DOUBHEAD[0]; default), or 'IterationValue' (SEQNUM report-step counter)."}
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

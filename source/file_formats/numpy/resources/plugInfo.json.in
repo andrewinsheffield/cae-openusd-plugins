@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+{
+    "Plugins": [
+        {
+            "Name": "omniSciNumpyFileFormat",
+            "Type": "library",
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Info": {
+                "Types": {
+                    "OmniSciNpyFileFormat": {
+                        "bases": ["SdfFileFormat"],
+                        "displayName": "CAE NPY File Format",
+                        "extensions": ["npy"],
+                        "formatId": "OmniSciNpyFileFormat",
+                        "target": "usd",
+                        "primary": false,
+                        "FileFormatArguments": {
+                            "mountPath": {"doc": "Optional absolute SdfPath where the dataset root should be authored for sublayer composition. Default: derived from the filename stem."},
+                            "cacheMode": {"doc": "Lazy-array cache policy: 'all' caches loaded values and 'static' or 'none' do not retain time-sampled values. Default: 'all'."},
+                            "arrayName": {"doc": "Optional OmniSciArrayAPI instance name for the single array. Default: 'array'."},
+                            "allowPickle": {"doc": "When 'true', allow pickle while reading NumPy arrays. Default: false."}
+                        }
+                    },
+                    "OmniSciNpzFileFormat": {
+                        "bases": ["SdfFileFormat"],
+                        "displayName": "CAE NPZ File Format",
+                        "extensions": ["npz"],
+                        "formatId": "OmniSciNpzFileFormat",
+                        "target": "usd",
+                        "primary": false,
+                        "FileFormatArguments": {
+                            "mountPath": {"doc": "Optional absolute SdfPath where the dataset root should be authored for sublayer composition. Default: derived from the filename stem."},
+                            "cacheMode": {"doc": "Lazy-array cache policy: 'all' caches loaded values and 'static' or 'none' do not retain time-sampled values. Default: 'all'."},
+                            "schema": {"doc": "Mapping used to interpret the NPZ: 'Point Cloud' (default), 'CGNS', or 'None'."},
+                            "coordsArray": {"doc": "Optional name of an interleaved Nx3 array to use as coordinates. If omitted, common names like coords/points/coordinates are auto-detected."},
+                            "coordsArrayX": {"doc": "Optional name of the X-coordinate array. Use together with coordsArrayY and coordsArrayZ for split coordinates."},
+                            "coordsArrayY": {"doc": "Optional name of the Y-coordinate array. Use together with coordsArrayX and coordsArrayZ for split coordinates."},
+                            "coordsArrayZ": {"doc": "Optional name of the Z-coordinate array. Use together with coordsArrayX and coordsArrayY for split coordinates."},
+                            "allowPickle": {"doc": "When 'true', allow pickle while reading NumPy arrays. Default: false."}
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

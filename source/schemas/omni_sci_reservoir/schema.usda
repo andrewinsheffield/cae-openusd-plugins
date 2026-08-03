@@ -1,0 +1,261 @@
+#usda 1.0
+(
+    """
+    USD schemas for reservoir corner-point grid datasets.
+
+    Schemas defined here:
+
+    \\li \\em OmniSciReservoirCornerPointGridAPI -- single-apply API that marks
+        a prim as a native reservoir corner-point grid backed by COORD/ZCORN
+        style arrays.
+    \\li \\em OmniSciReservoirCellPropertyAPI -- multiple-apply API that records
+        reservoir-specific interpretation metadata for a named cell property.
+
+    These schemas are intended to be composed with \\em OmniSciDataset,
+    \\em OmniSciArrayAPI, and \\em OmniSciFieldAPI. They preserve the native
+    corner-point representation and do not define or imply a derived
+    UsdGeomMesh / face-vertex mesh representation.
+    """
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "omniSciReservoir"
+        string libraryPath = "omniSciReservoir"
+        string libraryPrefix = "OmniSciReservoir"
+        bool useLiteralIdentifier = true
+        dictionary libraryTokens = {
+            dictionary coord = {
+                string doc = "OmniSciArrayAPI instance name for raw COORD pillar endpoint values."
+            }
+            dictionary zcorn = {
+                string doc = "OmniSciArrayAPI instance name for raw ZCORN corner-depth values."
+            }
+            dictionary actnum = {
+                string doc = "OmniSciArrayAPI instance name for raw ACTNUM active-cell flags."
+            }
+            dictionary logicalCellToActiveCell = {
+                string doc = "OmniSciArrayAPI instance name for logical-cell to packed active-cell index maps; inactive logical cells are -1."
+            }
+            dictionary activeCellIndices = {
+                string doc = "OmniSciArrayAPI instance name for logical-cell indices of active cells."
+            }
+            dictionary globalCellIndex = {
+                string doc = "OmniSciArrayAPI instance name for active-cell to logical-cell index maps."
+            }
+        }
+    }
+)
+{
+}
+
+class "OmniSciReservoirCornerPointGridAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "CornerPointGridAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks an \\em OmniSciDataset prim as
+    a reservoir corner-point grid.
+
+    The grid is represented in native Eclipse-family corner-point form:
+
+    \\li \\em OmniSciArrayAPI:\\em coord -- raw COORD pillar endpoint values,
+        length \\c 6*(nx+1)*(ny+1).
+    \\li \\em OmniSciArrayAPI:\\em zcorn -- raw ZCORN cell-corner depth values,
+        length \\c 8*nx*ny*nz.
+    \\li \\em OmniSciArrayAPI:\\em actnum -- optional raw ACTNUM cell activity
+        flags, length \\c nx*ny*nz. If absent, consumers should interpret all
+        logical cells as active unless another schema or format-specific
+        convention says otherwise.
+    \\li \\em OmniSciArrayAPI:\\em logicalCellToActiveCell -- optional
+        derived lookup from logical-cell index to packed active-cell index,
+        length \\c nx*ny*nz. Inactive cells are stored as \\c -1. Readers may
+        author this when ACTNUM is present so active-cell-packed properties can
+        be consumed without recomputing the map.
+
+    This schema intentionally does not author or require derived point,
+    face, edge, volume, centroid, normal, or explicit cell-connectivity arrays.
+    Consumers that need a visualization or simulation mesh may derive one
+    externally from COORD/ZCORN/ACTNUM, but that derived representation is out
+    of scope for this schema.
+    """
+)
+{
+    uniform int3 omni:reservoir:grid:logicalCellDims = (0, 0, 0) (
+        doc = """Logical grid dimensions (NX, NY, NZ).
+
+        These dimensions define the Cartesian address space for cell-centred
+        properties and for the COORD, ZCORN, and ACTNUM array lengths.
+        """
+        displayName = "Logical Cell Dimensions"
+        displayGroup = "Reservoir Corner-Point Grid"
+        customData = {
+            string apiName = "logicalCellDims"
+        }
+    )
+
+    uniform token omni:reservoir:grid:sourceFormat = "unknown" (
+        allowedTokens = [
+            "unknown",
+            "grdecl",
+            "egrid"
+        ]
+        doc = """Source file family for the grid description.
+
+        This is provenance metadata only. The schema interpretation of the
+        grid remains the same for GRDECL and EGRID: native corner-point arrays
+        and logical-cell-addressed properties.
+        """
+        displayName = "Source Format"
+        displayGroup = "Reservoir Corner-Point Grid"
+        customData = {
+            string apiName = "sourceFormat"
+        }
+    )
+
+    uniform token omni:reservoir:grid:indexOrder = "eclipse" (
+        allowedTokens = [
+            "eclipse",
+            "unknown"
+        ]
+        doc = """Flattening convention for logical-cell arrays.
+
+        The \\em eclipse convention means I cycles fastest, then J, then K.
+        This applies to ACTNUM and to cell properties whose
+        \\em OmniSciReservoirCellPropertyAPI indexSpace is \\em logicalCells.
+        """
+        displayName = "Index Order"
+        displayGroup = "Reservoir Corner-Point Grid"
+        customData = {
+            string apiName = "indexOrder"
+        }
+    )
+
+    uniform token omni:reservoir:grid:depthDirection = "zDown" (
+        allowedTokens = [
+            "zDown",
+            "zUp",
+            "unknown"
+        ]
+        doc = """Semantic direction of increasing Z / depth values.
+
+        Eclipse-family reservoir grids typically use depth-positive-down
+        coordinates. Consumers should use this value as interpretation metadata;
+        it does not transform the raw COORD or ZCORN arrays.
+        """
+        displayName = "Depth Direction"
+        displayGroup = "Reservoir Corner-Point Grid"
+        customData = {
+            string apiName = "depthDirection"
+        }
+    )
+
+    uniform string omni:reservoir:grid:name (
+        doc = """Original grid name from the source file, if one exists.
+
+        GRDECL files commonly have an implicit single global grid. EGRID files
+        may carry named global or local grids; this attribute preserves the
+        source name independently of the USD prim name.
+        """
+        displayName = "Name"
+        displayGroup = "Reservoir Corner-Point Grid"
+        customData = {
+            string apiName = "name"
+        }
+    )
+
+    uniform string omni:reservoir:grid:lengthUnit (
+        doc = """Length unit for coordinate/depth values, when known.
+
+        Examples include \\em m, \\em ft, and \\em cm. The schema does not
+        normalize units; raw arrays remain in source units.
+        """
+        displayName = "Length Unit"
+        displayGroup = "Reservoir Corner-Point Grid"
+        customData = {
+            string apiName = "lengthUnit"
+        }
+    )
+
+    uniform double[] omni:reservoir:grid:mapAxes (
+        doc = """Optional six-value MAPAXES-style map coordinate transform.
+
+        When authored, the values are stored in the same order as the source
+        keyword. The schema records this small metadata array directly rather
+        than through a lazy OmniSciArrayAPI instance.
+        """
+        displayName = "Map Axes"
+        displayGroup = "Reservoir Corner-Point Grid"
+        customData = {
+            string apiName = "mapAxes"
+        }
+    )
+}
+
+class "OmniSciReservoirCellPropertyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "CellPropertyAPI"
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix = "omni:reservoir:property"
+    }
+    doc = """Multiple-apply API schema that records reservoir-specific
+    interpretation metadata for a named cell property.
+
+    Apply one instance per cell property on the same prim that carries the
+    matching \\em OmniSciFieldAPI and \\em OmniSciArrayAPI instances. The
+    instance name should match the field/array instance name:
+
+    \\code
+    prepend apiSchemas = [
+        "OmniSciFieldAPI:poro",
+        "OmniSciArrayAPI:poro",
+        "OmniSciReservoirCellPropertyAPI:poro"
+    ]
+    \\endcode
+
+    \\em OmniSciFieldAPI records generic field semantics such as the source
+    keyword and \\em association = "element". This API records reservoir-grid
+    packing semantics that are not expressible through the generic field API.
+    """
+)
+{
+    uniform token indexSpace = "logicalCells" (
+        allowedTokens = [
+            "logicalCells",
+            "activeCells",
+            "unknown"
+        ]
+        doc = """Index space used by the property's value array.
+
+        \\li \\em logicalCells -- one value per logical grid cell, flattened
+            using the parent grid's indexOrder. The expected length is
+            \\c nx*ny*nz.
+        \\li \\em activeCells -- one value per active cell, packed in source
+            active-cell order. Use the parent grid's
+            \\em OmniSciArrayAPI:\\em logicalCellToActiveCell lookup to place
+            values in logical-cell space.
+        \\li \\em unknown -- the source did not provide enough metadata to
+            state the packing convention confidently.
+        """
+        displayName = "Index Space"
+        displayGroup = "Reservoir Cell Property"
+    )
+
+    uniform string sourceKeyword (
+        doc = """Original reservoir keyword that produced this property.
+
+        This normally matches the paired \\em OmniSciFieldAPI name attribute,
+        but is provided here so reservoir-specific consumers can inspect the
+        native keyword without depending on generic field metadata.
+        """
+        displayName = "Source Keyword"
+        displayGroup = "Reservoir Cell Property"
+    )
+}

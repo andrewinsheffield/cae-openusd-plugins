@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# OpenUSD installs pxr as a regular Python package whose __path__ only points
+# at OpenUSD's own lib/python/pxr directory.  CAE schema bindings install as
+# sibling pxr subpackages under this prefix, so extend the package path before
+# importing modules such as `from pxr import OmniSci`.
+
+from pkgutil import extend_path
+__path__ = extend_path(__path__, __name__)

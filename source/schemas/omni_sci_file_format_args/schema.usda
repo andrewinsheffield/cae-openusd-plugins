@@ -1,0 +1,638 @@
+#usda 1.0
+(
+    """
+    USD API schemas for configuring CAE file-format payloads.
+
+    These schemas are intended for prims that carry payload arcs to CAE file
+    formats. File-format plugins can compose the authored attribute defaults
+    into SdfLayer file-format arguments while building payload layers, giving
+    tools a typed and discoverable UI surface.
+    """
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "omniSciFileFormatArgs"
+        string libraryPath = "omniSciFileFormatArgs"
+        string libraryPrefix = "OmniSciFileFormatArgs"
+        bool useLiteralIdentifier = true
+    }
+)
+{
+}
+
+class "OmniSciFileFormatArgsAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "ArgsAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema for cross-format payload arguments shared
+    by CAE file-format plugins that expose lazy array values.
+
+    Applied to a prim that carries a payload arc to a CAE file format, this
+    schema exposes file-format arguments whose authored attribute defaults
+    can be composed into the
+    \\c SdfFileFormat::FileFormatArguments used to open the payload layer.
+
+    Apply using:
+
+    \\code
+    prepend apiSchemas = ["OmniSciFileFormatArgsAPI"]
+    \\endcode
+    """
+)
+{
+    uniform token omni:cae:format:cacheMode = "all" (
+        allowedTokens = [
+            "all",
+            "static",
+            "none"
+        ]
+        doc = """Retention policy for lazy-array values loaded by the
+        file-format plugin.
+
+        \\li \\em "all"    -- cache both non-time-sampled defaults and
+            time-sampled values for the lifetime of the layer.
+        \\li \\em "static" -- cache only non-time-sampled defaults; release
+            time-sampled values after each read.
+        \\li \\em "none"   -- do not retain loaded values between requests.
+        """
+        displayName = "Cache Mode"
+        displayGroup = "CAE File Format"
+        customData = {
+            string apiName = "cacheMode"
+        }
+    )
+}
+
+class "OmniSciFileFormatArgsTimeAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "TimeAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that maps a file format's native time
+    ordinate onto the USD time axis.
+
+    Applied to a prim that carries a payload arc to a time-varying CAE file
+    format, this schema selects which native time concept to read from the
+    file and how to transform it into a USD time code.
+
+    Apply using:
+
+    \\code
+    prepend apiSchemas = ["OmniSciFileFormatArgsTimeAPI"]
+    \\endcode
+
+    The resolved USD time code for each sample is computed as
+    \\c source_value * \\c scale + \\c offset, and the result is interpreted
+    contractually as <b>simulation seconds</b>. Every CAE file-format layer
+    that authors time samples also sets \\c timeCodesPerSecond \\c = \\c 1.0
+    on its emitted layer so the unit is self-describing -- opening the layer
+    directly through \\c Usd.Stage.Open plays the samples at real-time.
+
+    When the layer is composed into a host stage whose
+    \\c timeCodesPerSecond differs from 1.0, the host stage's TCPS
+    reinterprets the same numbers as a different wall-clock duration unless
+    the composition arc carries an \\c SdfLayerOffset that rescales them.
+    The composition is the responsibility of the authoring code (Kit
+    extension, scripted pipeline, hand-authored USD): when adding the
+    payload, sublayer, or reference arc, author
+    \\c SdfLayerOffset(scale=stage_tcps, offset=0) on the arc, e.g.
+
+    \\code
+    prim.GetPayloads().AddPayload(
+        Sdf.Payload(
+            assetPath=asset_path,
+            layerOffset=Sdf.LayerOffset(stage.GetTimeCodesPerSecond(), 0)))
+    \\endcode
+
+    The file-format plugin itself does not author the offset; without it,
+    host playback is fast or slow by the ratio of the host stage's TCPS to
+    the layer's \\c 1.0.
+
+    Sub-attribute summary:
+    \\li \\c scale -- per-source conversion factor that lands the result in
+        seconds. Typical values: \\c 1.0 when the file's native
+        \\c TimeValue is already seconds; \\c 86400.0 when it is in days;
+        \\c 0.001 when it is in milliseconds; the per-step \\c dt in seconds
+        when \\c source is \\c TimeStep.
+    \\li \\c offset -- additive shift applied after \\c scale, also in
+        seconds.
+    \\li \\c source -- native time concept selector; see the attribute doc
+        for per-token semantics.
+    """
+)
+{
+    uniform double omni:cae:format:time:scale = 1.0 (
+        doc = """Multiplier applied to the value selected by
+        \\c omni:cae:format:time:source before it is used as a USD time code.
+
+        The product \\c source_value \\c * \\c scale lands in simulation
+        seconds: pick \\c scale so the conversion matches the native unit of
+        the selected source. Examples: \\c 1.0 when \\c source = \\c TimeValue
+        and the file stores time in seconds; \\c 86400.0 when the file stores
+        time in days; \\c 0.001 when the file stores time in milliseconds;
+        the per-step \\c dt in seconds when \\c source = \\c TimeStep.
+        """
+        displayName = "Scale"
+        displayGroup = "CAE File Format Time"
+        customData = {
+            string apiName = "scale"
+        }
+    )
+
+    uniform double omni:cae:format:time:offset = 0.0 (
+        doc = """Additive offset applied after \\c omni:cae:format:time:scale,
+        shifting the resulting USD time code along the time axis. The value is
+        in simulation seconds (matching the canonical unit of the resolved
+        time code).
+        """
+        displayName = "Offset"
+        displayGroup = "CAE File Format Time"
+        customData = {
+            string apiName = "offset"
+        }
+    )
+
+    uniform token omni:cae:format:time:source = "TimeStep" (
+        allowedTokens = [
+            "TimeStep",
+            "TimeValue",
+            "IterationValue"
+        ]
+        doc = """Selects the native time concept used to populate USD sample
+        times. Not every file-format plugin supports every token. The
+        selected raw value is transformed into the final USD time code by
+        \\c omni:cae:format:time:scale and \\c omni:cae:format:time:offset,
+        and the resulting time code is interpreted as simulation seconds.
+
+        \\li \\em "TimeStep"       -- zero-based sample index. Always
+            available; used as the fallback when no physical time or iteration
+            counter is exposed by the file. Pick \\c scale to be the per-step
+            \\c dt in seconds so the resulting time codes land at the right
+            real-time positions.
+        \\li \\em "TimeValue"      -- physical simulation time stored in the
+            file. Plugins source this from their native time record, for
+            example the CGNS \\c BaseIterativeData_t \\c TimeValues array,
+            the EnSight \\c "time values" block of a \\c .case file, the
+            numeric OpenFOAM time-directory name, the per-timestep
+            \\c time HDF5 attribute on an EDEM dataset, or the
+            \\c DOUBHEAD record on an Eclipse UNRST restart. Pick \\c scale
+            to convert that native unit to seconds (\\c 1.0 when the file
+            stores seconds, \\c 86400.0 for days, \\c 0.001 for milliseconds,
+            and so on).
+        \\li \\em "IterationValue" -- solver iteration counter, typically
+            used for steady-state or pseudo-time runs. Sourced from the CGNS
+            \\c BaseIterativeData_t \\c IterationValues array or an
+            equivalent per-format iteration record. <b>Iteration counts are
+            not physical seconds by construction</b>: when this source is
+            selected, pick \\c scale to be the average iteration duration in
+            seconds if real-time playback is desired; otherwise the resulting
+            time codes are an iteration-derived axis rather than a physical-
+            time axis.
+        """
+        displayName = "Source"
+        displayGroup = "CAE File Format Time"
+        customData = {
+            string apiName = "source"
+        }
+    )
+}
+
+class "OmniSciFileFormatArgsStreamingAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "StreamingAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that exposes lazy-loader tuning hints for
+    chunked array reads.
+
+    Applied to a prim that carries a payload arc to a CAE file format with
+    chunked array support, this schema lets a consumer hint at the
+    parallelism and granularity used when streaming large arrays. Plugins are
+    free to honour or ignore the hints.
+
+    Apply using:
+
+    \\code
+    prepend apiSchemas = ["OmniSciFileFormatArgsStreamingAPI"]
+    \\endcode
+    """
+)
+{
+    uniform int omni:cae:format:streaming:ioThreads = 1 (
+        doc = """Hint controlling the number of concurrent chunk-read work
+        items the lazy loader may schedule. Values less than one are treated
+        as one.
+        """
+        displayName = "I/O Threads"
+        displayGroup = "CAE File Format Streaming"
+        customData = {
+            string apiName = "ioThreads"
+        }
+    )
+
+}
+
+class "OmniSciFileFormatArgsCgnsAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "CgnsAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = [
+        "OmniSciFileFormatArgsAPI",
+        "OmniSciFileFormatArgsTimeAPI"
+    ]
+    doc = "CGNS-specific file-format payload arguments."
+)
+{
+    uniform string omni:cae:format:cgns:baseName (
+        doc = "Optional CGNS base name filter. Empty means all bases."
+        displayName = "Base Name"
+        displayGroup = "CGNS File Format"
+        customData = {
+            string apiName = "baseName"
+        }
+    )
+
+    uniform string omni:cae:format:cgns:zoneName (
+        doc = "Optional CGNS zone name filter. Empty means all zones."
+        displayName = "Zone Name"
+        displayGroup = "CGNS File Format"
+        customData = {
+            string apiName = "zoneName"
+        }
+    )
+
+    uniform int omni:cae:format:cgns:intSize = 0 (
+        doc = "Integer precision override in bits: 32 or 64. Use 0 to preserve file precision."
+        displayName = "Integer Size"
+        displayGroup = "CGNS File Format"
+        customData = {
+            string apiName = "intSize"
+        }
+    )
+
+    uniform int omni:cae:format:cgns:floatSize = 0 (
+        doc = "Floating-point precision override in bits: 32 or 64. Use 0 to preserve file precision."
+        displayName = "Float Size"
+        displayGroup = "CGNS File Format"
+        customData = {
+            string apiName = "floatSize"
+        }
+    )
+}
+
+class "OmniSciFileFormatArgsEdemAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "EdemAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = [
+        "OmniSciFileFormatArgsAPI",
+        "OmniSciFileFormatArgsTimeAPI",
+        "OmniSciFileFormatArgsStreamingAPI"
+    ]
+    doc = "EDEM file-format payload arguments."
+)
+{
+}
+
+class "OmniSciFileFormatArgsFlashAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "FlashAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = [
+        "OmniSciFileFormatArgsAPI",
+        "OmniSciFileFormatArgsTimeAPI"
+    ]
+    doc = "Convenience API that applies the shared cache and time arguments supported by FLASH."
+)
+{
+}
+
+class "OmniSciFileFormatArgsEnSightAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "EnSightAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = [
+        "OmniSciFileFormatArgsAPI",
+        "OmniSciFileFormatArgsTimeAPI",
+        "OmniSciFileFormatArgsStreamingAPI"
+    ]
+    doc = "EnSight file-format payload arguments."
+)
+{
+}
+
+class "OmniSciFileFormatArgsNpzAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "NpzAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = ["OmniSciFileFormatArgsAPI"]
+    doc = "NPZ-specific file-format payload arguments."
+)
+{
+    uniform token omni:cae:format:npz:schema = "Point Cloud" (
+        allowedTokens = [
+            "Point Cloud",
+            "CGNS",
+            "None"
+        ]
+        doc = """Selects the interpretation applied to the arrays inside an
+        NPZ archive when authoring USD prims.
+
+        \\li \\em "Point Cloud" -- arrays describe one or more point clouds.
+            The \\c coordsArray attribute (or the trio \\c coordsArrayX /
+            \\c coordsArrayY / \\c coordsArrayZ) names the position array(s);
+            remaining numeric arrays become per-point fields.
+        \\li \\em "CGNS"        -- arrays follow the conventions of the
+            NPZ-CGNS helper layout used to round-trip CGNS datasets through
+            NPZ.
+        \\li \\em "None"        -- no interpretation; every array is exposed
+            as a named lazy array on a single dataset prim.
+        """
+        displayName = "Schema"
+        displayGroup = "NPZ File Format"
+        customData = {
+            string apiName = "schema"
+        }
+    )
+
+    uniform string omni:cae:format:npz:coordsArray (
+        doc = "Optional name of an interleaved Nx3 coordinate array."
+        displayName = "Coordinates Array"
+        displayGroup = "NPZ File Format"
+        customData = {
+            string apiName = "coordsArray"
+        }
+    )
+
+    uniform string omni:cae:format:npz:coordsArrayX (
+        doc = "Optional name of the X-coordinate array."
+        displayName = "Coordinates X Array"
+        displayGroup = "NPZ File Format"
+        customData = {
+            string apiName = "coordsArrayX"
+        }
+    )
+
+    uniform string omni:cae:format:npz:coordsArrayY (
+        doc = "Optional name of the Y-coordinate array."
+        displayName = "Coordinates Y Array"
+        displayGroup = "NPZ File Format"
+        customData = {
+            string apiName = "coordsArrayY"
+        }
+    )
+
+    uniform string omni:cae:format:npz:coordsArrayZ (
+        doc = "Optional name of the Z-coordinate array."
+        displayName = "Coordinates Z Array"
+        displayGroup = "NPZ File Format"
+        customData = {
+            string apiName = "coordsArrayZ"
+        }
+    )
+
+    uniform bool omni:cae:format:npz:allowPickle = false (
+        doc = "When true, allow pickle while reading NumPy arrays."
+        displayName = "Allow Pickle"
+        displayGroup = "NPZ File Format"
+        customData = {
+            string apiName = "allowPickle"
+        }
+    )
+}
+
+class "OmniSciFileFormatArgsNpyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "NpyAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = ["OmniSciFileFormatArgsAPI"]
+    doc = "NPY-specific file-format payload arguments."
+)
+{
+    uniform string omni:cae:format:npy:arrayName (
+        doc = "Optional OmniSciArrayAPI instance name for the single array."
+        displayName = "Array Name"
+        displayGroup = "NPY File Format"
+        customData = {
+            string apiName = "arrayName"
+        }
+    )
+
+    uniform bool omni:cae:format:npy:allowPickle = false (
+        doc = "When true, allow pickle while reading NumPy arrays."
+        displayName = "Allow Pickle"
+        displayGroup = "NPY File Format"
+        customData = {
+            string apiName = "allowPickle"
+        }
+    )
+}
+
+class "OmniSciFileFormatArgsOpenFoamAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "OpenFoamAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = [
+        "OmniSciFileFormatArgsAPI",
+        "OmniSciFileFormatArgsTimeAPI",
+        "OmniSciFileFormatArgsStreamingAPI"
+    ]
+    doc = "OpenFOAM file-format payload arguments."
+)
+{
+}
+
+class "OmniSciFileFormatArgsGrdeclAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "GrdeclAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = [
+        "OmniSciFileFormatArgsAPI"
+    ]
+    doc = "GRDECL / Eclipse text-deck file-format payload arguments."
+)
+{
+}
+
+class "OmniSciFileFormatArgsEgridAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "EgridAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = [
+        "OmniSciFileFormatArgsAPI"
+    ]
+    doc = "EGRID / Eclipse binary-grid file-format payload arguments."
+)
+{
+}
+
+class "OmniSciFileFormatArgsReservoirResultsAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "ReservoirResultsAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = [
+        "OmniSciFileFormatArgsAPI"
+    ]
+    doc = "Common Eclipse reservoir result-file payload arguments."
+)
+{
+    uniform token omni:cae:format:reservoir:keywordMode = "whitelist" (
+        allowedTokens = [
+            "whitelist",
+            "allCellSized"
+        ]
+        doc = """Selects which Eclipse cell-property keywords are exposed as
+        \\c OmniSciFieldAPI and \\c OmniSciArrayAPI instances on cell-property
+        prims.
+
+        \\li \\em "whitelist"    -- expose only the curated set of standard
+            stored keywords supported by the reader.
+        \\li \\em "allCellSized" -- expose any numeric record whose stored
+            item count matches the logical or active cell count.
+        """
+        displayName = "Keyword Mode"
+        displayGroup = "Reservoir Result File Format"
+        customData = {
+            string apiName = "reservoirKeywordMode"
+        }
+    )
+}
+
+class "OmniSciFileFormatArgsInitAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "InitAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = [
+        "OmniSciFileFormatArgsReservoirResultsAPI"
+    ]
+    doc = "Eclipse INIT static-result file-format payload arguments."
+)
+{
+}
+
+class "OmniSciFileFormatArgsUnrstAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "UnrstAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = [
+        "OmniSciFileFormatArgsReservoirResultsAPI",
+        "OmniSciFileFormatArgsTimeAPI"
+    ]
+    doc = """Eclipse UNRST restart-result file-format payload arguments.
+
+    UNRST conforms to the generic \\c OmniSciFileFormatArgsTimeAPI surface
+    for time-axis selection. The plugin's default
+    \\c (source, scale) pair maps \\c DOUBHEAD[0] (simulation days) to
+    simulation seconds via \\c (TimeValue, 86400.0). Authoring
+    \\c source = TimeStep selects zero-based sample index; authoring
+    \\c source = IterationValue interprets the \\c SEQNUM report-step
+    counter as the iteration ordinate.
+    """
+)
+{
+}
+
+class "OmniSciFileFormatArgsVtkAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "VtkAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = [
+        "OmniSciFileFormatArgsAPI",
+        "OmniSciFileFormatArgsStreamingAPI"
+    ]
+    doc = "VTK file-format payload arguments."
+)
+{
+}
+
+class "OmniSciFileFormatArgsPythonAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "PythonAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = ["OmniSciFileFormatArgsAPI"]
+    doc = "Python-backed file-format payload arguments."
+)
+{
+    uniform string omni:cae:format:python:module (
+        doc = "Python module to import for reading."
+        displayName = "Module"
+        displayGroup = "Python File Format"
+        customData = {
+            string apiName = "module"
+        }
+    )
+
+    uniform string omni:cae:format:python:path (
+        doc = "Path prepended to sys.path before importing the reader module."
+        displayName = "Path"
+        displayGroup = "Python File Format"
+        customData = {
+            string apiName = "path"
+        }
+    )
+
+    uniform string omni:cae:format:python:readFunction = "read" (
+        doc = "Python read callback function name."
+        displayName = "Read Function"
+        displayGroup = "Python File Format"
+        customData = {
+            string apiName = "readFunction"
+        }
+    )
+
+    uniform string omni:cae:format:python:canReadFunction = "can_read" (
+        doc = "Python can-read callback function name."
+        displayName = "Can Read Function"
+        displayGroup = "Python File Format"
+        customData = {
+            string apiName = "canReadFunction"
+        }
+    )
+
+    uniform string omni:cae:format:python:loadArrayFunction = "load_array" (
+        doc = "Python lazy-array loading callback function name."
+        displayName = "Load Array Function"
+        displayGroup = "Python File Format"
+        customData = {
+            string apiName = "loadArrayFunction"
+        }
+    )
+}

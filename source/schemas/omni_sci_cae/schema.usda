@@ -1,0 +1,180 @@
+#usda 1.0
+(
+    """
+    USD schemas for basic CAE dataset types.
+
+    Schemas defined here:
+
+    \\li \\em OmniSciCaeMeshAPI -- single-apply API that marks a prim as a CAE mesh.
+    \\li \\em OmniSciCaePointCloudAPI -- single-apply API that marks a prim as a CAE
+        point cloud dataset.
+    """
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "omniSciCae"
+        string libraryPath = "omniSciCae"
+        string libraryPrefix = "OmniSciCae"
+        bool useLiteralIdentifier = true
+        dictionary libraryTokens = {
+            # --- Point / coordinate array instance names (for OmniSciArrayAPI) ---
+            dictionary points = {
+                string doc = "OmniSciArrayAPI instance name for a combined 3-D points array (float3[])."
+            }
+            dictionary pointsX = {
+                string doc = "OmniSciArrayAPI instance name for split X-coordinate array (float[])."
+            }
+            dictionary pointsY = {
+                string doc = "OmniSciArrayAPI instance name for split Y-coordinate array (float[])."
+            }
+            dictionary pointsZ = {
+                string doc = "OmniSciArrayAPI instance name for split Z-coordinate array (float[])."
+            }
+            # --- Mesh connectivity array instance names (for OmniSciArrayAPI) ---
+            dictionary faceVertexIndices = {
+                string doc = "OmniSciArrayAPI instance name for face-vertex index array (int[])."
+            }
+            dictionary faceVertexCounts = {
+                string doc = "OmniSciArrayAPI instance name for per-face vertex count array (int[])."
+            }
+        }
+    }
+)
+{
+}
+
+class "OmniSciCaeMeshAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "MeshAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks a prim as a CAE mesh dataset.
+
+    OmniSciCaeMeshAPI is a marker schema with no attributes of its own. Geometry
+    and connectivity data are expressed by applying \\em OmniSciArrayAPI
+    instances on the same prim, using the standard instance names defined as
+    tokens in this library.
+
+    <b>Geometry arrays</b>
+
+    Node positions can be stored in one of two layouts:
+
+    \\li <b>Interleaved (preferred)</b> -- one \\em OmniSciArrayAPI:\\em points
+        instance carrying a \\c float3[] array of (x, y, z) tuples.
+    \\li <b>Split / SoA</b> -- three separate instances (\\em pointsX,
+        \\em pointsY, \\em pointsZ) each carrying a \\c float[] array.
+
+    <b>Connectivity arrays</b>
+
+    \\li \\em OmniSciArrayAPI:\\em faceVertexIndices -- \\c int[] flat list of
+        node indices for each face, concatenated in face order.
+    \\li \\em OmniSciArrayAPI:\\em faceVertexCounts -- \\c int[] number of
+        vertices per face (same length as the number of faces).
+
+    <b>Usage example (interleaved points)</b>
+
+    \\code
+    def OmniSciDataset "Mesh" (
+        prepend apiSchemas = [
+            "OmniSciCaeMeshAPI",
+            "OmniSciArrayAPI:points",
+            "OmniSciArrayAPI:faceVertexIndices",
+            "OmniSciArrayAPI:faceVertexCounts"
+        ]
+    )
+    {
+        token omni:sci:array:points:device            = "cpu"
+        token omni:sci:array:faceVertexIndices:device = "cpu"
+        token omni:sci:array:faceVertexCounts:device  = "cpu"
+    }
+    \\endcode
+
+    <b>Usage example (split points)</b>
+
+    \\code
+    def OmniSciDataset "Mesh" (
+        prepend apiSchemas = [
+            "OmniSciCaeMeshAPI",
+            "OmniSciArrayAPI:pointsX",
+            "OmniSciArrayAPI:pointsY",
+            "OmniSciArrayAPI:pointsZ",
+            "OmniSciArrayAPI:faceVertexIndices",
+            "OmniSciArrayAPI:faceVertexCounts"
+        ]
+    )
+    {
+    }
+    \\endcode
+    """
+)
+{
+}
+
+class "OmniSciCaePointCloudAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "PointCloudAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Single-apply API schema that marks a prim as a CAE point cloud dataset.
+
+    OmniSciCaePointCloudAPI is a marker schema with no attributes of its own.
+    Point positions are expressed by applying \\em OmniSciArrayAPI instances
+    on the same prim, using the standard instance names defined as tokens in
+    this library.
+
+    <b>Geometry arrays</b>
+
+    \\li <b>Interleaved (preferred)</b> -- one \\em OmniSciArrayAPI:\\em points
+        instance carrying a \\c float3[] array of (x, y, z) tuples.
+    \\li <b>Split / SoA</b> -- three separate instances (\\em pointsX,
+        \\em pointsY, \\em pointsZ) each carrying a \\c float[] array.
+
+    Additional per-point field data (e.g. pressure, temperature) is expressed
+    via \\em OmniSciFieldAPI and \\em OmniSciArrayAPI using field-specific
+    instance names, exactly as on an \\em OmniSciDataset prim.
+
+    <b>Usage example (interleaved points)</b>
+
+    \\code
+    def OmniSciDataset "PointCloud" (
+        prepend apiSchemas = [
+            "OmniSciCaePointCloudAPI",
+            "OmniSciArrayAPI:points"
+        ]
+    )
+    {
+        token omni:sci:array:points:device = "cpu"
+    }
+    \\endcode
+
+    <b>Usage example (split points + scalar field)</b>
+
+    \\code
+    def OmniSciDataset "PointCloud" (
+        prepend apiSchemas = [
+            "OmniSciCaePointCloudAPI",
+            "OmniSciArrayAPI:pointsX",
+            "OmniSciArrayAPI:pointsY",
+            "OmniSciArrayAPI:pointsZ",
+            "OmniSciFieldAPI:pressure",
+            "OmniSciArrayAPI:pressure"
+        ]
+    )
+    {
+        uniform string omni:sci:field:pressure:name        = "p"
+        uniform token  omni:sci:field:pressure:association = "node"
+        token          omni:sci:array:pressure:device      = "cpu"
+    }
+    \\endcode
+    """
+)
+{
+}

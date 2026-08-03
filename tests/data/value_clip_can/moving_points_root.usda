@@ -1,0 +1,31 @@
+#usda 1.0
+(
+    startTimeCode = 0
+    endTimeCode = 3
+    timeCodesPerSecond = 1.0
+)
+
+def OmniSciDataset "Can" (
+    add references = @./mesh.vtu:SDF_FORMAT_ARGS:mountPath=/Can@</Can>
+    prepend apiSchemas = [
+        "OmniSciArrayAPI:points"
+    ]
+    clips = {
+        dictionary points = {
+            asset[] assetPaths = [
+                @./moving_points_000.vtk:SDF_FORMAT_ARGS:mountPath=/Can@,
+                @./moving_points_001.vtk:SDF_FORMAT_ARGS:mountPath=/Can@,
+                @./moving_points_002.vtk:SDF_FORMAT_ARGS:mountPath=/Can@,
+                @./moving_points_003.vtk:SDF_FORMAT_ARGS:mountPath=/Can@
+            ]
+            double2[] active = [(0, 0), (1, 1), (2, 2), (3, 3)]
+            double2[] times = [(0, 0), (1, 0), (2, 0), (3, 0)]
+            asset manifestAssetPath = @./moving_points_manifest.usda@
+            string primPath = "/Can"
+        }
+    }
+    clipSets = ["points"]
+)
+{
+    token omni:sci:array:points:device = "cpu"
+}

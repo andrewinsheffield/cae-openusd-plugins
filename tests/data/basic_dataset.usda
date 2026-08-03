@@ -1,0 +1,22 @@
+#usda 1.0
+(
+    """Basic OmniSci dataset fixture -- used by round-trip tests."""
+)
+
+def OmniSciDataset "SimResult" (
+    prepend apiSchemas = [
+        "OmniSciFieldAPI:velocity",
+        "OmniSciArrayAPI:velocity",
+        "OmniSciFieldAPI:pressure",
+        "OmniSciArrayAPI:pressure"
+    ]
+)
+{
+    uniform string omni:sci:field:velocity:name        = "U"
+    uniform token  omni:sci:field:velocity:association = "node"
+    token          omni:sci:array:velocity:device      = "cuda"
+
+    uniform string omni:sci:field:pressure:name        = "p"
+    uniform token  omni:sci:field:pressure:association = "element"
+    token          omni:sci:array:pressure:device      = "cpu"
+}

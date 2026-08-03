@@ -1,0 +1,108 @@
+#usda 1.0
+(
+    """
+    USD schema for source-faithful FLASH AMR datasets.
+
+    OmniSciFlashAmrAPI marks one packed OmniSciDataset whose structural and
+    physics arrays retain the source HDF5 block order. Multidimensional HDF5
+    datasets are flattened into scalar arrays; the attributes on this API
+    preserve their per-block trailing shapes.
+    """
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "omniSciFlash"
+        string libraryPath = "omniSciFlash"
+        string libraryPrefix = "OmniSciFlash"
+        bool useLiteralIdentifier = true
+        dictionary libraryTokens = {
+            dictionary gid = {
+                string doc = "OmniSciArrayAPI instance for the flattened FLASH global identification table."
+            }
+            dictionary nodeType = {
+                string doc = "OmniSciArrayAPI instance for native FLASH block node types."
+            }
+            dictionary refinementLevel = {
+                string doc = "OmniSciArrayAPI instance for native FLASH block refinement levels."
+            }
+            dictionary coordinates = {
+                string doc = "OmniSciArrayAPI instance for native per-block coordinates when present."
+            }
+            dictionary boundingBox = {
+                string doc = "OmniSciArrayAPI instance for native flattened per-block bounding boxes."
+            }
+            dictionary blockSize = {
+                string doc = "OmniSciArrayAPI instance for native per-block sizes when present."
+            }
+            dictionary processorNumber = {
+                string doc = "OmniSciArrayAPI instance for native per-block processor ownership when present."
+            }
+        }
+    }
+)
+{
+}
+
+class "OmniSciFlashAmrAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "AmrAPI"
+        token apiSchemaType = "singleApply"
+    }
+    doc = """Marks an OmniSciDataset as a packed FLASH AMR dataset.
+
+    All structural and field arrays use the complete native block order. The
+    leading array dimension is the FLASH global block count. The shape
+    attributes below preserve the remaining source HDF5 dimensions after
+    values are flattened into USD scalar arrays.
+    """
+)
+{
+    uniform int omni:flash:amr:spatialDimension = 0 (
+        doc = "Spatial dimension inferred from the native GID row width."
+        displayName = "Spatial Dimension"
+        displayGroup = "FLASH AMR"
+        customData = { string apiName = "spatialDimension" }
+    )
+
+    uniform int[] omni:flash:amr:gidShape (
+        doc = "Native trailing shape of the GID dataset, excluding the global block dimension."
+        displayName = "GID Shape"
+        displayGroup = "FLASH AMR"
+        customData = { string apiName = "gidShape" }
+    )
+
+    uniform int[] omni:flash:amr:coordinatesShape (
+        doc = "Native trailing shape of the optional coordinates dataset."
+        displayName = "Coordinates Shape"
+        displayGroup = "FLASH AMR"
+        customData = { string apiName = "coordinatesShape" }
+    )
+
+    uniform int[] omni:flash:amr:boundingBoxShape (
+        doc = "Native trailing shape of the bounding box dataset."
+        displayName = "Bounding Box Shape"
+        displayGroup = "FLASH AMR"
+        customData = { string apiName = "boundingBoxShape" }
+    )
+
+    uniform int[] omni:flash:amr:blockSizeShape (
+        doc = "Native trailing shape of the optional block size dataset."
+        displayName = "Block Size Shape"
+        displayGroup = "FLASH AMR"
+        customData = { string apiName = "blockSizeShape" }
+    )
+
+    uniform int[] omni:flash:amr:fieldShape (
+        doc = "Native trailing shape shared by physics fields, conventionally (nzb, nyb, nxb)."
+        displayName = "Field Shape"
+        displayGroup = "FLASH AMR"
+        customData = { string apiName = "fieldShape" }
+    )
+}

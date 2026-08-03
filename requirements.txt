@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Python runtimes used by the Python-backed readers in the Packman package.
+# Keep these pins aligned with the versions installed by the superbuild.
+numpy==2.5.1
+trimesh==4.12.2
+warp-lang==1.15.0

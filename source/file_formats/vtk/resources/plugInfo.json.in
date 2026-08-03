@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+{
+    "Plugins": [
+        {
+            "Name": "omniSciVtkFileFormat",
+            "Type": "library",
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Info": {
+                "Types": {
+                    "OmniSciVtkFileFormat": {
+                        "bases": ["SdfFileFormat"],
+                        "displayName": "CAE VTK File Format",
+                        "extensions": ["vtk", "vti", "vtr", "vts", "vtp", "vtu"],
+                        "formatId": "OmniSciVtkFileFormat",
+                        "target": "usd",
+                        "primary": false,
+                        "FileFormatArguments": {
+                            "mountPath": {
+                                "doc": "Optional absolute SdfPath where the dataset root prim should be authored. Default: derived from the file stem."
+                            },
+                            "cacheMode": {
+                                "doc": "Lazy-array cache policy: 'all' caches loaded values and 'static' or 'none' do not retain time-sampled values. Default: 'all'."
+                            },
+                            "ioThreads": {
+                                "doc": "Maximum number of worker tasks used for large parallelizable VTK payload reads."
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

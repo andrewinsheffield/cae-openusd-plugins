@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+{
+    "Plugins": [
+        {
+            "Name": "omniSciNvdbFileFormat",
+            "Type": "library",
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Info": {
+                "Types": {
+                    "OmniSciNvdbFileFormat": {
+                        "bases": ["SdfFileFormat"],
+                        "displayName": "CAE NanoVDB File Format",
+                        "extensions": ["nvdb"],
+                        "formatId": "OmniSciNvdbFileFormat",
+                        "target": "usd",
+                        "primary": false,
+                        "FileFormatArguments": {
+                            "mountPath": {"doc": "Optional absolute SdfPath where the dataset root should be authored for sublayer composition. Default: derived from the filename stem."},
+                            "cacheMode": {"doc": "Lazy-array cache policy: 'all' caches loaded values and 'static' or 'none' do not retain time-sampled values. Default: 'all'."}
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

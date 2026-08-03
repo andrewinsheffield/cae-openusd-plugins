@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Documentation request
+description: Report incorrect or missing CAE OpenUSD Plugins documentation
+title: "[DOC]: "
+body:
+  - type: dropdown
+    id: request_type
+    attributes:
+      label: Request type
+      options:
+        - Incorrect documentation
+        - Missing documentation
+        - Unclear documentation
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Documentation location
+      description: Link to the relevant file or page when possible.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Description
+      description: Explain what is incorrect, missing, or unclear.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Submission checks
+      options:
+        - label: I searched existing issues for duplicates.
+          required: true
+        - label: I agree to follow this project's Code of Conduct.
+          required: true

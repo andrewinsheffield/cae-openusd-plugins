@@ -1,0 +1,98 @@
+#usda 1.0
+(
+    startTimeCode = 0
+    endTimeCode = 3
+    timeCodesPerSecond = 1.0
+)
+
+def OmniSciDataset "Can" (
+    add references = @./mesh.vtu:SDF_FORMAT_ARGS:mountPath=/Can@</Can>
+    prepend apiSchemas = [
+        "OmniSciFieldAPI:cell_eqps",
+        "OmniSciArrayAPI:cell_eqps",
+        "OmniSciFieldAPI:point_accl_x",
+        "OmniSciArrayAPI:point_accl_x",
+        "OmniSciFieldAPI:point_accl_y",
+        "OmniSciArrayAPI:point_accl_y",
+        "OmniSciFieldAPI:point_accl_z",
+        "OmniSciArrayAPI:point_accl_z",
+        "OmniSciFieldAPI:point_displ_x",
+        "OmniSciArrayAPI:point_displ_x",
+        "OmniSciFieldAPI:point_displ_y",
+        "OmniSciArrayAPI:point_displ_y",
+        "OmniSciFieldAPI:point_displ_z",
+        "OmniSciArrayAPI:point_displ_z",
+        "OmniSciFieldAPI:point_vel_x",
+        "OmniSciArrayAPI:point_vel_x",
+        "OmniSciFieldAPI:point_vel_y",
+        "OmniSciArrayAPI:point_vel_y",
+        "OmniSciFieldAPI:point_vel_z",
+        "OmniSciArrayAPI:point_vel_z"
+    ]
+    clips = {
+        dictionary fields = {
+            asset[] assetPaths = [
+                @./fields_000.npz:SDF_FORMAT_ARGS:schema=None&mountPath=/Can@,
+                @./fields_001.npz:SDF_FORMAT_ARGS:schema=None&mountPath=/Can@,
+                @./fields_002.npz:SDF_FORMAT_ARGS:schema=None&mountPath=/Can@,
+                @./fields_003.npz:SDF_FORMAT_ARGS:schema=None&mountPath=/Can@
+            ]
+            double2[] active = [(0, 0), (1, 1), (2, 2), (3, 3)]
+            double2[] times = [(0, 0), (1, 0), (2, 0), (3, 0)]
+            asset manifestAssetPath = @./fields_manifest.usda@
+            string primPath = "/Can"
+        }
+    }
+    clipSets = ["fields"]
+)
+{
+    uniform string omni:sci:field:cell_eqps:name = "cell_eqps"
+    uniform token omni:sci:field:cell_eqps:association = "element"
+    token omni:sci:array:cell_eqps:device = "cpu"
+    float[] omni:sci:array:cell_eqps:value
+
+    uniform string omni:sci:field:point_accl_x:name = "point_accl_x"
+    uniform token omni:sci:field:point_accl_x:association = "node"
+    token omni:sci:array:point_accl_x:device = "cpu"
+    float[] omni:sci:array:point_accl_x:value
+
+    uniform string omni:sci:field:point_accl_y:name = "point_accl_y"
+    uniform token omni:sci:field:point_accl_y:association = "node"
+    token omni:sci:array:point_accl_y:device = "cpu"
+    float[] omni:sci:array:point_accl_y:value
+
+    uniform string omni:sci:field:point_accl_z:name = "point_accl_z"
+    uniform token omni:sci:field:point_accl_z:association = "node"
+    token omni:sci:array:point_accl_z:device = "cpu"
+    float[] omni:sci:array:point_accl_z:value
+
+    uniform string omni:sci:field:point_displ_x:name = "point_displ_x"
+    uniform token omni:sci:field:point_displ_x:association = "node"
+    token omni:sci:array:point_displ_x:device = "cpu"
+    float[] omni:sci:array:point_displ_x:value
+
+    uniform string omni:sci:field:point_displ_y:name = "point_displ_y"
+    uniform token omni:sci:field:point_displ_y:association = "node"
+    token omni:sci:array:point_displ_y:device = "cpu"
+    float[] omni:sci:array:point_displ_y:value
+
+    uniform string omni:sci:field:point_displ_z:name = "point_displ_z"
+    uniform token omni:sci:field:point_displ_z:association = "node"
+    token omni:sci:array:point_displ_z:device = "cpu"
+    float[] omni:sci:array:point_displ_z:value
+
+    uniform string omni:sci:field:point_vel_x:name = "point_vel_x"
+    uniform token omni:sci:field:point_vel_x:association = "node"
+    token omni:sci:array:point_vel_x:device = "cpu"
+    float[] omni:sci:array:point_vel_x:value
+
+    uniform string omni:sci:field:point_vel_y:name = "point_vel_y"
+    uniform token omni:sci:field:point_vel_y:association = "node"
+    token omni:sci:array:point_vel_y:device = "cpu"
+    float[] omni:sci:array:point_vel_y:value
+
+    uniform string omni:sci:field:point_vel_z:name = "point_vel_z"
+    uniform token omni:sci:field:point_vel_z:association = "node"
+    token omni:sci:array:point_vel_z:device = "cpu"
+    float[] omni:sci:array:point_vel_z:value
+}
