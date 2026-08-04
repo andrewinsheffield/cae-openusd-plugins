@@ -15,6 +15,7 @@ from .utils import (
     read_npz_metadata,
     register_array,
     resolve_coordinates,
+    shaped_array_type_name,
     unique_identifier,
 )
 
@@ -24,9 +25,10 @@ def read(stage: Usd.Stage | None, path: str, args: dict) -> list[dict]:
 
     Applies ``OmniSciCaePointCloudAPI`` to the dataset prim and registers
     the spatial coordinates as split ``OmniSciArrayAPI`` instances
-    (``pointsX`` / ``pointsY`` / ``pointsZ``).  Every remaining 1-D array
-    with a supported dtype is registered as an ``OmniSciFieldAPI`` +
-    ``OmniSciArrayAPI`` pair with ``association = "node"``.
+    (``pointsX`` / ``pointsY`` / ``pointsZ``).  Every remaining 1-D scalar
+    or Nx2/3/4 vector array with a supported dtype is registered as an
+    ``OmniSciFieldAPI`` + ``OmniSciArrayAPI`` pair with
+    ``association = "node"``.
 
     Coordinate arrays are resolved in the following order:
 
@@ -99,7 +101,7 @@ def read(stage: Usd.Stage | None, path: str, args: dict) -> list[dict]:
                 lazy_fields,
             )
 
-    # --- register scalar field arrays ----------------------------------------
+    # --- register scalar and vector field arrays -----------------------------
     reserved = (
         {coord_spec["array"]}
         if coord_spec["kind"] == "interleaved"
@@ -111,10 +113,10 @@ def read(stage: Usd.Stage | None, path: str, args: dict) -> list[dict]:
         if name in reserved:
             continue
         info = array_info[name]
-        if info.ndim != 1:
+        if info.ndim > 2:
             continue
-        type_name = array_type_name(info)
-        if type_name is None:
+        type_name, components = shaped_array_type_name(info)
+        if type_name is None or (info.ndim == 2 and components is None):
             continue
 
         inst = unique_identifier(name, used_instances)
@@ -123,6 +125,9 @@ def read(stage: Usd.Stage | None, path: str, args: dict) -> list[dict]:
             OmniSci.ArrayAPI.Apply(dataset_prim, inst)
             OmniSci.FieldAPI(dataset_prim, inst).CreateNameAttr(name)
             OmniSci.FieldAPI(dataset_prim, inst).CreateAssociationAttr("node")
-        register_array(dataset_prim, dataset_path, inst, type_name, json.dumps({"array": name}), lazy_fields)
+        token = {"array": name}
+        if components is not None:
+            token["components"] = components
+        register_array(dataset_prim, dataset_path, inst, type_name, json.dumps(token), lazy_fields)
 
     return lazy_fields

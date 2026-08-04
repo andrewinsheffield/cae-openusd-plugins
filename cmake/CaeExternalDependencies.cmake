@@ -168,6 +168,10 @@ function(_cae_external_normalize_hdf5_target)
     if(TARGET HDF5::HDF5
             AND WIN32
             AND CAE_FORMAT_DEPS_LINKAGE STREQUAL "static")
+        if(NOT TARGET ZLIB::ZLIB)
+            find_package(ZLIB REQUIRED)
+        endif()
+
         get_target_property(_hdf5_link_libraries
             HDF5::HDF5 INTERFACE_LINK_LIBRARIES)
         if(NOT _hdf5_link_libraries)
@@ -178,6 +182,14 @@ function(_cae_external_normalize_hdf5_target)
             # Static HDF5 2.x calls StrStrIA on Windows.
             set_property(TARGET HDF5::HDF5 APPEND PROPERTY
                 INTERFACE_LINK_LIBRARIES Shlwapi.lib)
+        endif()
+
+        list(FIND _hdf5_link_libraries "ZLIB::ZLIB" _hdf5_zlib_index)
+        if(_hdf5_zlib_index EQUAL -1)
+            # Static HDF5 2.x does not reliably propagate its private zlib
+            # dependency on Windows.
+            set_property(TARGET HDF5::HDF5 APPEND PROPERTY
+                INTERFACE_LINK_LIBRARIES ZLIB::ZLIB)
         endif()
     endif()
 endfunction()

@@ -31,14 +31,14 @@ hashes from published package versions. Native archives retain the OpenUSD,
 Python, and platform dimensions needed to select a compatible binary:
 
 ```text
-cae_openusd_plugins@0.1.0+openusd.usd-0.25.11.py312.linux-x86_64.zip
+cae_openusd_plugins@0.1.1+openusd.usd-0.25.11.py312.linux-x86_64.zip
 ```
 
 Wheels likewise retain their required runtime dimensions, but omit source
 provenance:
 
 ```text
-cae_openusd_plugins-0.1.0+usd25.11.py312.usdcore-cp312-cp312-linux_x86_64.whl
+cae_openusd_plugins-0.1.1+usd25.11.py312.usdcore-cp312-cp312-linux_x86_64.whl
 ```
 
 The protected tag pipeline builds and tests every supported matrix entry before

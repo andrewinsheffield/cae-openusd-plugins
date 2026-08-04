@@ -382,7 +382,7 @@ if(CAE_SUPERBUILD_ENABLE_FORMAT_DEPS)
             "-DCMAKE_PREFIX_PATH=<INSTALL_DIR>"
             "-DZLIB_ROOT=<INSTALL_DIR>"
             "-DZLIB_USE_STATIC_LIBS=${_cae_sb_format_deps_build_static_libs}"
-            "-DHDF5_ENABLE_Z_LIB_SUPPORT=ON"
+            "-DHDF5_ENABLE_ZLIB_SUPPORT=ON"
             "-DHDF5_USE_ZLIB_STATIC=${_cae_sb_format_deps_build_static_libs}"
             "-DHDF5_ENABLE_SZIP_SUPPORT=OFF"
             "-DHDF5_ENABLE_SZIP_ENCODING=OFF"

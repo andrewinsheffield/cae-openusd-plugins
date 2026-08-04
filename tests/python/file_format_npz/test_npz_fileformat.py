@@ -26,6 +26,7 @@ def npz_path(tmp_path: pathlib.Path) -> pathlib.Path:
         path,
         coords=np.array([[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]], dtype=np.float32),
         temperature=np.array([300.0, 325.0], dtype=np.float32),
+        velocity=np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float32),
         ids=np.array([10, 20], dtype=np.int32),
     )
     return path
@@ -109,6 +110,22 @@ def test_scalar_fields_are_exposed(npz_path: pathlib.Path):
     assert "OmniSciFieldAPI:ids" in api_schemas
     assert list(dataset.GetAttribute("omni:sci:array:temperature:value").Get(Usd.TimeCode.EarliestTime())) == [300.0, 325.0]
     assert list(dataset.GetAttribute("omni:sci:array:ids:value").Get(Usd.TimeCode.EarliestTime())) == [10, 20]
+
+
+@pytest.mark.integration
+def test_vector_fields_are_exposed(npz_path: pathlib.Path):
+    stage = Usd.Stage.Open(_identifier(npz_path))
+    dataset = stage.GetPrimAtPath("/points")
+    api_schemas = set(dataset.GetAppliedSchemas())
+    assert "OmniSciFieldAPI:velocity" in api_schemas
+    assert "OmniSciArrayAPI:velocity" in api_schemas
+
+    velocity = dataset.GetAttribute("omni:sci:array:velocity:value")
+    assert str(velocity.GetTypeName()) == "float3[]"
+    assert list(velocity.Get(Usd.TimeCode.EarliestTime())) == [
+        (1.0, 2.0, 3.0),
+        (4.0, 5.0, 6.0),
+    ]
 
 
 @pytest.mark.integration

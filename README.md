@@ -13,7 +13,7 @@ The repository includes the format-agnostic `OmniSci` schemas, domain schemas
 for formats such as CGNS, OpenFOAM, VTK, EnSight, EDEM, FLASH AMR, and Eclipse
 reservoir data, and readers for both native and Python-backed formats.
 
-> **Project status:** The current public release is `0.1.0`. Its
+> **Project status:** The current public release is `0.1.1`. Its
 > readers and schemas intentionally cover selected concepts from each source
 > domain; they are not complete implementations of those formats or standards.
 > See the [supported formats](docs/file_formats/README.md) and [Conceptual Data
