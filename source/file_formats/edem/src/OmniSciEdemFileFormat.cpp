@@ -860,9 +860,17 @@ static std::vector<FieldInfo> ScanParticleFields(const ParticleTypeInfo& typeInf
     std::vector<FieldInfo> fields;
     H5Handle file = OpenFileReadOnly(firstSample.filePath);
     const std::string basePath = firstSample.timestepPath + "/ParticleTypes/" + typeInfo.sourceNode;
-    static const std::array<std::string, 4> kKnownFields = { "ids", "scale", "orientation", "velocity" };
-    for (const std::string& child : kKnownFields)
+
+    // "position" is authored as the point cloud positions attribute, not as a generic field.
+    static const std::array<std::string, 1> kReservedFields = { "position" };
+
+    std::vector<std::string> children = ListChildNames(file.Get(), basePath);
+    std::sort(children.begin(), children.end());
+    for (const std::string& child : children)
     {
+        if (std::find(kReservedFields.begin(), kReservedFields.end(), child) != kReservedFields.end())
+            continue;
+
         const std::string childPath = basePath + "/" + child;
         if (!IsDataset(file.Get(), childPath))
         {
