@@ -16,6 +16,25 @@ section and create a fresh `Unreleased` section.
 
 ## Unreleased
 
+### Added
+
+- **VTKHDF DEM particle-series file-format plugin (`.vtkhdf`).** New
+  `omniSciVtkHdfFileFormat` reads DEM simulations exported as VTKHDF v2.5
+  MultiBlockDataSets with time-varying particle clouds, static-topology
+  geometry meshes, and prototype particle templates. Discovers sibling
+  `<stem>_t_<N>.vtkhdf` files as automatic time samples and, when present, a
+  sibling `particle_templates/` directory for prototype meshes. Reuses the
+  EDEM domain schemas (`OmniSciEdemParticleTypeAPI`,
+  `OmniSciEdemParticleCloudAPI`, `OmniSciEdemGeometryGroupAPI`) since the DEM
+  data model matches. Enabled with `-DCAE_ENABLE_VTKHDF=ON` (default off).
+- `OmniSciFileFormatArgsVtkHdfAPI` payload-arguments schema so kit-cae and
+  other clients can carry `cacheMode`, `timeScale`, `timeOffset`,
+  `timeSource`, `ioThreads`, and `mountPath` on a `.vtkhdf` payload prim.
+- Integration test suite `tests/python/file_format_vtkhdf/` (19 tests)
+  covering plugin registration, mount-path stripping across a
+  `<stem>_t_<N>.vtkhdf` series, prototype meshes, particle-cloud datasets
+  with per-vertex fields, time-varying positions, and static geometry meshes.
+
 ## [0.1.1] - 2026-08-03
 
 ### Fixed
