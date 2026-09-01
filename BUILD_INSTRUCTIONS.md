@@ -1,185 +1,258 @@
-# cae-openusd-plugins Build Instructions (Windows, usd-core 25.11)
+# cae-openusd-plugins Build Instructions (Windows)
 
-## Prerequisites
+Two supported build recipes, selected by how the artifact will be consumed:
 
-- Visual Studio 2022 (Community or higher) with C++ workload installed
-- [miniforge3](https://github.com/conda-forge/miniforge) / Python 3.12 environment with `usd-core` installed
-- Git
+| Consumer | USD flavor | Recipe |
+| --- | --- | --- |
+| **kit-cae 3.x / Omniverse Kit** (`KIT_CAE_OPENUSD_PLUGINS_PACKAGE` override) | OpenUSD split libs matching kit's runtime | [Recipe A — kit-cae compatible](#recipe-a--kit-cae-compatible-build) |
+| Standalone Python (usd-core), CI wheel | Monolithic `usd_ms.dll` | [Recipe B — usd-core / wheel build](#recipe-b--usd-core--wheel-build) |
 
-### Install usd-core
+> **Do not mix them.** A monolithic-USD-linked plugin package cannot be loaded
+> by kit-cae; `LoadLibrary` fails with *The specified module could not be
+> found* because kit ships `usd_ar.dll`, `usd_sdf.dll`, ... rather than
+> `usd_ms.dll`. Kit-cae's `use_local_dependencies.py` will link the package,
+> but plugins will not load at runtime. Use Recipe A for anything consumed
+> by kit-cae.
 
-```powershell
-pip install usd-core==25.11
-```
+---
 
-### Enable Windows Long Path Support
+## Prerequisites (both recipes)
 
-Run PowerShell **as Administrator**:
+- Visual Studio 2022 (Community or higher) with the **Desktop development
+  with C++** workload installed. Verify with:
+  ```powershell
+  Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC" -Directory
+  ```
+  If the directory is empty or the `Common7\Tools\Launch-VsDevShell.ps1`
+  script is missing, run the VS Installer → *Repair* before continuing.
+- Windows 10/11 SDK (any version under `C:\Program Files (x86)\Windows Kits\10`).
+- Git.
+- [miniforge3](https://github.com/conda-forge/miniforge) or another Python
+  3.12 install with `usd-core` (used for `usdGenSchema` in Recipe B and for
+  running the standalone tests):
+  ```powershell
+  pip install usd-core==25.11
+  ```
+
+### Enable Windows long-path support (one-time, elevated)
 
 ```powershell
 Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
     -Name "LongPathsEnabled" -Value 1
-
 git config --global core.longpaths true
 ```
 
-> Required because the OpenUSD source tree contains file paths that exceed 260 characters.
-
 ---
 
-## Step 1 — Set Up the Build Environment
+## Environment setup (used by both recipes)
 
-Open a **new** PowerShell window and run the following in sequence.
-
-### Load the VS 2022 x64 developer environment
+Open a **new** PowerShell window. Always start by clearing `PYTHONPATH` — a
+stray value poisons `cmake -E env` because the Windows `;` path separator
+collides with CMake's list separator:
 
 ```powershell
-& "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -SkipAutomaticLocation
+if (Test-Path Env:PYTHONPATH) { Remove-Item Env:PYTHONPATH }
 ```
 
-### Add cmake and ninja to PATH
+Discover the exact MSVC toolset and Windows SDK versions installed on this
+machine (they may differ from the values shown in older docs):
 
 ```powershell
-$env:PATH = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin;" +
-            "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;" +
+$msvcRoot = 'C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC'
+$msvcVer  = (Get-ChildItem $msvcRoot -Directory | Sort-Object Name -Descending | Select-Object -First 1).Name
+$sdkRoot  = 'C:\Program Files (x86)\Windows Kits\10'
+$sdkVer   = (Get-ChildItem "$sdkRoot\Include" -Directory | Sort-Object Name -Descending | Select-Object -First 1).Name
+"MSVC $msvcVer, Windows SDK $sdkVer"
+```
+
+Point PATH at the internal cmake shipped by the format-deps superbuild (if
+present), the winget ninja, and the compiler:
+
+```powershell
+$env:PATH = "$PWD\_build\tools\cmake\data\bin;" +
+            (Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\Ninja-build.Ninja_*").FullName + ";" +
+            "$msvcRoot\$msvcVer\bin\Hostx64\x64;" +
+            "$sdkRoot\bin\$sdkVer\x64;" +
             $env:PATH
+$env:INCLUDE = "$msvcRoot\$msvcVer\include;" +
+               "$sdkRoot\Include\$sdkVer\ucrt;" +
+               "$sdkRoot\Include\$sdkVer\shared;" +
+               "$sdkRoot\Include\$sdkVer\um;" +
+               "$sdkRoot\Include\$sdkVer\winrt"
+$env:LIB     = "$msvcRoot\$msvcVer\lib\x64;" +
+               "$sdkRoot\Lib\$sdkVer\ucrt\x64;" +
+               "$sdkRoot\Lib\$sdkVer\um\x64"
+cmake --version
+cl.exe 2>&1 | Select-Object -First 1
 ```
 
-### Verify the environment
+You should see cmake 3.28 or newer and a `Microsoft (R) C/C++ Optimizing
+Compiler` banner.
 
-```powershell
-cmake --version   # should report 3.28.x
-ninja --version
-$env:LIB -split ";" | Select-String "x64"  # should show Windows Kit x64 paths
-```
+> **Why not `Launch-VsDevShell.ps1`?** On installs where the VS Developer
+> Shell script is missing (older repair states, partial workload installs),
+> the environment prep above is a self-contained replacement.
 
 ---
 
-## Step 2 — Run the Superbuild
+## Recipe A — kit-cae compatible build
 
-Choose the USD flavor based on how the package will be consumed:
+This recipe reuses kit-cae 3.x's pre-built **split-libs OpenUSD SDK**
+(from `kit-cae-3.0/_build/target-deps/usd/release/`) as the compile SDK.
+This bypasses `build_usd.py` entirely and guarantees ABI compatibility with
+kit's runtime. Total build time: ~2 minutes after the format-deps SDK is
+present.
 
-| Consumer                 | `CAE_USD_FLAVOR` | Produced USD DLL layout                             |
-| ------------------------ | ---------------- | --------------------------------------------------- |
-| **kit-cae 3.x / Kit SDK** | `openusd`        | Split libs (`usd_usd.dll`, `usd_sdf.dll`, ...) matching kit's `omni.usd.libs`. |
-| Standalone / pip / usd-core | `usd-core`   | Monolithic `usd_ms.dll`. **Not compatible with kit-cae** (`LoadLibrary` will fail with `The specified module could not be found`). |
+### A1. Format-dependency SDK
 
-From the repository root (`cae-openusd-plugins\`):
-
-```powershell
-# For kit-cae consumption (this is what you want if using KIT_CAE_OPENUSD_PLUGINS_PACKAGE)
-cmake "-DCAE_USD_FLAVOR=openusd" "-DCAE_USD_VERSION=25.11" -P cmake/ci/superbuild.cmake
-```
-
-> **Note:** The version value must be quoted as shown to prevent PowerShell from truncating `25.11` to `25`.
-
-The `openusd` flavor downloads OpenUSD source and builds it with `build_usd.py`.
-The `usd-core` flavor downloads a prebuilt monolithic wheel from PyPI. On first run either takes 20–40 minutes.
-
-On completion, two cache files are written:
-
-```
-_build/sdk/cae-format-sdk-cache.cmake      # format dep roots, EDEM/CGNS/FLASH enable flags
-_build/sdk_usd/cae-usd-sdk-cache.cmake     # USD_ROOT and CMAKE_PREFIX_PATH for the chosen USD
-```
-
----
-
-## Step 3 — Configure the Main Project
+Run the format-only side of the superbuild once. It downloads and builds
+pugixml, LZ4, zlib, xz/liblzma, HDF5, and CGNS into `_build/sdk/`. This does
+**not** invoke `build_usd.py`.
 
 ```powershell
-cmake -S . -B build `
-  -G Ninja `
+cmake "-DCAE_USD_FLAVOR=usd-core" "-DCAE_USD_VERSION=25.11" -P cmake/ci/superbuild.cmake
+```
+
+> **PowerShell quoting matters.** `25.11` must be quoted so PowerShell does
+> not truncate it to `25`.
+
+The step above also creates `_build/sdk_usd/` with a usd-core stub. **Delete
+it** — Recipe A uses kit-cae's USD SDK instead:
+
+```powershell
+Remove-Item _build\sdk_usd -Recurse -Force -ErrorAction SilentlyContinue
+New-Item _build\sdk_usd -ItemType Directory | Out-Null
+```
+
+Point the plugin build at kit's USD SDK by dropping a hand-written cache
+fragment at `_build/sdk_usd/cae-usd-sdk-cache.cmake`:
+
+```cmake
+# _build/sdk_usd/cae-usd-sdk-cache.cmake
+set(_CAE_KIT_USD_ROOT "C:/Users/<you>/Documents/OV-Composer/kit-cae-3.0/_build/target-deps/usd/release")
+
+set(USD_ROOT "${_CAE_KIT_USD_ROOT}" CACHE PATH
+    "Kit-cae USD SDK (split libraries, matching kit runtime)")
+
+if(WIN32)
+    set(_SEP "\;")
+else()
+    set(_SEP ":")
+endif()
+if(DEFINED ENV{CMAKE_PREFIX_PATH} AND NOT "$ENV{CMAKE_PREFIX_PATH}" STREQUAL "")
+    set(ENV{CMAKE_PREFIX_PATH} "$ENV{CMAKE_PREFIX_PATH}${_SEP}${_CAE_KIT_USD_ROOT}")
+else()
+    set(ENV{CMAKE_PREFIX_PATH} "${_CAE_KIT_USD_ROOT}")
+endif()
+set(CAE_USD_VERSION "0.25.11" CACHE STRING "OpenUSD version reported by the linked SDK")
+```
+
+### A2. Configure
+
+```powershell
+$cl = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\$msvcVer\bin\Hostx64\x64\cl.exe"
+cmake -S . -B build -G Ninja `
+  "-DCMAKE_C_COMPILER=$cl" `
+  "-DCMAKE_CXX_COMPILER=$cl" `
   -C _build/sdk/cae-format-sdk-cache.cmake `
   -C _build/sdk_usd/cae-usd-sdk-cache.cmake `
   -DCMAKE_BUILD_TYPE=Release `
-  -DCAE_PACKAGE_VARIANT=openusd
+  -DCAE_PACKAGE_VARIANT=openusd `
+  -DCAE_ENABLE_EDEM=ON `
+  -DCAE_ENABLE_VTKHDF=ON `
+  -DCAE_ENABLE_VTK=OFF `
+  -DCAE_ENABLE_CGNS=OFF `
+  -DCAE_ENABLE_ECLIPSE=OFF `
+  -DCAE_ENABLE_FLASH=OFF `
+  -DCAE_ENABLE_OPENFOAM=OFF `
+  -DCAE_ENABLE_ENSIGHT=OFF `
+  -DCAE_ENABLE_NUMPY=OFF `
+  -DCAE_ENABLE_TRIMESH=OFF `
+  -DCAE_ENABLE_NVDB=OFF `
+  -DCAE_ENABLE_PYTHON_PROXY=OFF
 ```
 
-> `-G Ninja` is required. The default Visual Studio generator causes TBB header
-> incompatibilities in Debug mode that are not present in a Ninja Release build.
-
-> `-DCAE_PACKAGE_VARIANT=openusd` stamps the produced package with the same
-> variant metadata as the published `cae_openusd_plugins` artifact. Without it,
-> `kit-cae-3.0/tools/use_local_dependencies.py` rejects the override with
+> **`CAE_PACKAGE_VARIANT=openusd`** stamps the produced package with the same
+> variant metadata as kit-cae's published `cae_openusd_plugins` artifact.
+> Without it, `use_local_dependencies.py` rejects the override with
 > `Local cae_openusd_plugins package is incompatible: CAE_PACKAGE_VARIANT:
 > local='', expected='openusd'`.
 
----
+> **Optional plugins are disabled** in the invocation above because they
+> pull in more dependencies (VTK, CGNS, LZMA) that occasionally re-detect
+> differently against kit's USD headers. Enable individually as needed.
 
-## Step 4 — Build
-
-Add the SDK runtime DLL directories to PATH so build-time code generators can
-find `z.dll` and `usd_ms.dll`:
+### A3. Build, install, and package
 
 ```powershell
-$env:PATH = "$PWD\_build\sdk\bin;" +
-            "C:\Users\ahobbs\AppData\Local\miniforge3\Lib\site-packages\pxr;" +
-            $env:PATH
+$env:PATH = "$PWD\_build\sdk\bin;" + $env:PATH  # HDF5 dlls for schema gen
 
 cmake --build build --parallel
-```
-
----
-
-## Step 5 — Package
-
-```powershell
+cmake --build build --target install
 cmake --build build --target package
 ```
 
-The ZIP archive is written to `build\packages\`, e.g.:
+The archive lands at:
 
 ```
-build\packages\cae_openusd_plugins@0.1.1-usdcore-25.11-cp312-windows-x86_64-<rev>.zip
+build\packages\cae_openusd_plugins@0.1.1+openusd.usd-0.25.11.py312.windows-x86_64.<rev>.zip
 ```
 
----
-
-## Using the Package with kit-cae
+### A4. Deploy into kit-cae
 
 Kit-cae's `tools/use_local_dependencies.py` reads
 `KIT_CAE_OPENUSD_PLUGINS_PACKAGE` and swaps the packman-managed junction at
-`_build/target-deps/cae_openusd_plugins/` to point at your local extract. The
-variable **must be a real environment variable in the process that runs
+`_build/target-deps/cae_openusd_plugins/` to point at your local extract.
+The variable **must be a real environment variable in the process that runs
 `repo.bat`**.
 
-> **PowerShell trap:** `set NAME=value` in PowerShell creates a PowerShell
-> variable named `NAME=value` (with `=value` as part of the name) — it does
-> **not** set an environment variable. Use `$env:NAME = "value"` in PowerShell,
-> or use `cmd.exe` for the `set` syntax below.
+> **PowerShell trap:** `set NAME=value` in PowerShell creates a variable
+> literally named `NAME=value` — it does **not** set an environment variable.
+> Use `$env:NAME = "value"` in PowerShell, or use `cmd.exe` for the classic
+> `set` syntax.
 
-### From `cmd.exe`
+From cmd.exe:
 
 ```bat
-set KIT_CAE_OPENUSD_PLUGINS_PACKAGE=C:\Users\ahobbs\Documents\OV-Composer\cae-openusd-plugins\build\packages\cae_openusd_plugins@<version>.zip
+set KIT_CAE_OPENUSD_PLUGINS_PACKAGE=C:\Users\<you>\Documents\OV-Composer\cae-openusd-plugins\build\packages\cae_openusd_plugins@<version>.zip
 repo.bat build -rx
 ```
 
-### From PowerShell
+From PowerShell:
 
 ```powershell
-$env:KIT_CAE_OPENUSD_PLUGINS_PACKAGE = "C:\Users\ahobbs\Documents\OV-Composer\cae-openusd-plugins\build\packages\cae_openusd_plugins@<version>.zip"
+$env:KIT_CAE_OPENUSD_PLUGINS_PACKAGE = "C:\Users\<you>\Documents\OV-Composer\cae-openusd-plugins\build\packages\cae_openusd_plugins@<version>.zip"
 .\repo.bat build -rx
 ```
 
-Use a **clean build** (`-rx`) whenever the package override is set, changed, or unset.
+Always use a **clean build** (`-rx`) when the package override changes.
 
-### Verify the override took effect
+### A5. Verify the override took effect
 
 `use_local_dependencies.py` should print a `[local-deps] Using …` line during
-`repo.bat build`. If those lines are absent, the env var wasn't visible to the
-subprocess. You can also verify after the fact:
+`repo.bat build`. After the build:
 
 ```powershell
 (Get-Item _build\target-deps\cae_openusd_plugins).Target
 ```
 
 - Path starting with `_build\local-deps\…` → local override active.
-- Path starting with `C:\packman-repo\chk\…` → packman baseline (override
+- Path starting with `C:\packman-repo\chk\…` → published baseline (override
   didn't apply).
 
-### Restore the published dependency
+Inside a running kit-cae session, from **Window → Script Editor**:
+
+```python
+from pxr import Plug, Tf
+p = Plug.Registry().GetPluginWithName("omniSciVtkHdfFileFormat")
+print("registered:", p is not None)
+if p:
+    print("resource path:", p.resourcePath)
+    print("using LOCAL override:", "local-deps" in p.resourcePath.lower())
+print("VtkHdfAPI:", not Tf.Type.FindByName("OmniSciFileFormatArgsVtkHdfAPI").isUnknown)
+```
+
+### A6. Restore the published dependency
 
 ```bat
 set KIT_CAE_OPENUSD_PLUGINS_PACKAGE=
@@ -188,19 +261,87 @@ repo.bat build -rx
 
 ---
 
-## Repeating the Build After Code Changes
+## Recipe B — usd-core / wheel build
 
-The superbuild only needs to run once. For subsequent code changes:
+Use this recipe when producing a wheel for pip install or a package for
+standalone Python consumers linked against usd-core. It is **not** suitable
+for kit-cae.
+
+### B1. Superbuild
 
 ```powershell
-# Load VS env + PATH additions (Steps 1 and 4 PATH setup)
-& "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -SkipAutomaticLocation
-$env:PATH = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin;" +
-            "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;" +
-            "$PWD\_build\sdk\bin;" +
-            "C:\Users\ahobbs\AppData\Local\miniforge3\Lib\site-packages\pxr;" +
-            $env:PATH
+cmake "-DCAE_USD_FLAVOR=usd-core" "-DCAE_USD_VERSION=25.11" -P cmake/ci/superbuild.cmake
+```
 
+First run takes 20–40 minutes; both format deps and the usd-core compile SDK
+shim are prepared under `_build/sdk/` and `_build/sdk_usd/`.
+
+### B2. Configure
+
+```powershell
+cmake -S . -B build -G Ninja `
+  -C _build/sdk/cae-format-sdk-cache.cmake `
+  -C _build/sdk_usd/cae-usd-sdk-cache.cmake `
+  -DCMAKE_BUILD_TYPE=Release
+```
+
+### B3. Build and package
+
+```powershell
+$env:PATH = "$PWD\_build\sdk\bin;" +
+            "C:\Users\<you>\AppData\Local\miniforge3\Lib\site-packages\pxr;" +
+            $env:PATH
 cmake --build build --parallel
 cmake --build build --target package
 ```
+
+Output filename:
+
+```
+build\packages\cae_openusd_plugins@0.1.1+usd-0.25.11.py312.windows-x86_64.<rev>.zip
+```
+
+---
+
+## Repeating the build after code changes
+
+Only the environment prep, the plugin `cmake --build`, and `--target package`
+need to run again:
+
+```powershell
+if (Test-Path Env:PYTHONPATH) { Remove-Item Env:PYTHONPATH }
+
+# Recipe A extras: keep the kit-cae USD SDK cache in place
+$env:PATH = "$PWD\_build\sdk\bin;" + $env:PATH
+
+cmake --build build --parallel
+cmake --build build --target install
+cmake --build build --target package
+```
+
+For kit-cae Recipe A also re-run `use_local_dependencies.py` (or just
+re-launch a shell with `KIT_CAE_OPENUSD_PLUGINS_PACKAGE` set and rebuild
+kit-cae) so the new zip is unpacked into `_build/local-deps/…`.
+
+---
+
+## Testing the vtkhdf importer
+
+19 pytest cases exercise the plugin against the JP_VTKHDF sample data in
+this repository. Under Recipe A they run against kit-cae's Python + USD:
+
+```powershell
+$kitpy   = 'C:\Users\<you>\Documents\OV-Composer\kit-cae-3.0\_build\target-deps\python\python.exe'
+$usdroot = 'C:\Users\<you>\Documents\OV-Composer\kit-cae-3.0\_build\target-deps\usd\release'
+$pkg     = 'C:\Users\<you>\Documents\OV-Composer\kit-cae-3.0\_build\target-deps\cae_openusd_plugins'
+
+$env:PYTHONPATH               = "$usdroot\lib\python;$pkg\lib\python"
+$env:PATH                     = "$usdroot\bin;$usdroot\lib;$pkg\plugin\usd;" + $env:PATH
+$env:CAE_VTKHDF_PACKAGE_ROOT  = $pkg
+$env:CAE_VTKHDF_TEST_DATA_DIR = "$PWD\JP_VTKHDF"
+
+& $kitpy -m pip install pytest --quiet
+& $kitpy -m pytest tests\python\file_format_vtkhdf -m integration -v
+```
+
+Expected: `19 passed`.
