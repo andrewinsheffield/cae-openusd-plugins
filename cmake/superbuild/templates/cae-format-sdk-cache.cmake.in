@@ -20,6 +20,8 @@ set(CAE_ENABLE_CGNS @CAE_SB_FORMAT_ENABLE_CGNS@ CACHE BOOL
     "Enable CGNS when consuming the generated dependency SDK")
 set(CAE_ENABLE_EDEM @CAE_SB_FORMAT_ENABLE_EDEM@ CACHE BOOL
     "Enable EDEM/HDF5 when consuming the generated dependency SDK")
+set(CAE_ENABLE_VTKHDF @CAE_SB_FORMAT_ENABLE_VTKHDF@ CACHE BOOL
+    "Enable VTKHDF/HDF5 (DEM particle sim) when consuming the generated dependency SDK")
 set(CAE_ENABLE_FLASH @CAE_SB_FORMAT_ENABLE_FLASH@ CACHE BOOL
     "Enable FLASH/HDF5 when consuming the generated dependency SDK")
 set(CAE_PACKAGE_BUNDLE_DIRECT_DEPS @CAE_SB_FORMAT_PACKAGE_BUNDLE_DIRECT_DEPS@ CACHE BOOL

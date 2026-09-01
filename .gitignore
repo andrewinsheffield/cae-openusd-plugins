@@ -36,3 +36,5 @@ compile_commands.json
 Thumbs.db
 # Generated build and dependency state
 _build/
+# folder containing exmample fileset
+/JP_VTKHDF

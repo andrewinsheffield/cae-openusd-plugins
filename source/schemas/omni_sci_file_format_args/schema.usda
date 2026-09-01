@@ -308,6 +308,22 @@ class "OmniSciFileFormatArgsEdemAPI" (
 {
 }
 
+class "OmniSciFileFormatArgsVtkHdfAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "VtkHdfAPI"
+        token apiSchemaType = "singleApply"
+    }
+    prepend apiSchemas = [
+        "OmniSciFileFormatArgsAPI",
+        "OmniSciFileFormatArgsTimeAPI",
+        "OmniSciFileFormatArgsStreamingAPI"
+    ]
+    doc = "VTKHDF DEM particle series file-format payload arguments."
+)
+{
+}
+
 class "OmniSciFileFormatArgsFlashAPI" (
     inherits = </APISchemaBase>
     customData = {

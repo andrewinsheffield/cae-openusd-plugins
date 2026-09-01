@@ -17,6 +17,7 @@ def test_plugin_registered():
     assert not Tf.Type.FindByName("OmniSciFileFormatArgsStreamingAPI").isUnknown
     assert not Tf.Type.FindByName("OmniSciFileFormatArgsCgnsAPI").isUnknown
     assert not Tf.Type.FindByName("OmniSciFileFormatArgsEdemAPI").isUnknown
+    assert not Tf.Type.FindByName("OmniSciFileFormatArgsVtkHdfAPI").isUnknown
     assert not Tf.Type.FindByName("OmniSciFileFormatArgsFlashAPI").isUnknown
     assert not Tf.Type.FindByName("OmniSciFileFormatArgsEnSightAPI").isUnknown
     assert not Tf.Type.FindByName("OmniSciFileFormatArgsNpzAPI").isUnknown

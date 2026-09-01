@@ -64,6 +64,7 @@ cmake -S . -B build \
 | `CAE_ENABLE_ECLIPSE` | `ON` | GRDECL, EGRID, INIT, UNRST |
 | `CAE_ENABLE_VTK` | `ON` | Legacy and serial XML VTK |
 | `CAE_ENABLE_EDEM` | `OFF` | EDEM |
+| `CAE_ENABLE_VTKHDF` | `OFF` | VTKHDF DEM particle series |
 | `CAE_ENABLE_FLASH` | `OFF` | FLASH AMR |
 | `CAE_ENABLE_CGNS` | `OFF` | CGNS |
 | `CAE_ENABLE_PYTHON_PROXY` | `ON` when Python is found | Python proxy |

@@ -161,6 +161,16 @@ if(CAE_ENABLE_EDEM)
     )
 endif()
 
+if(CAE_ENABLE_VTKHDF)
+    cae_add_pytest(test_vtkhdf_fileformat
+        TESTS   tests/python/file_format_vtkhdf
+        PLUGINS omniSciVtkHdfFileFormat omniSciFileFormatArgs omniSciEdem omniSciCae omniSci
+        LABELS  integration
+        PYTEST_ARGS -m integration
+        ENV_VARS "CAE_VTKHDF_TEST_DATA_DIR=${CAE_SOURCE_ROOT}/JP_VTKHDF"
+    )
+endif()
+
 if(CAE_ENABLE_FLASH)
     if(COMMAND cae_resolve_package)
         cae_resolve_package(HDF5 1.10 COMPONENTS C)

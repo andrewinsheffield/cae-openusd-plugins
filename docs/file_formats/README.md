@@ -13,6 +13,7 @@ exposes native data through a USD stage without rewriting the source asset.
 | Eclipse reservoir | `.grdecl`, `.data`, `.egrid`, `.init`, `.unrst` | `omniSciEclipseFileFormat` | `CAE_ENABLE_ECLIPSE` | On | [Mapping](../conceptual_data_mapping/grdecl_egrid.md) |
 | VTK legacy and serial XML | `.vtk`, `.vti`, `.vtr`, `.vts`, `.vtp`, `.vtu` | `omniSciVtkFileFormat` | `CAE_ENABLE_VTK` | On | [Mapping](../conceptual_data_mapping/vtk.md) |
 | EDEM | `.dem` | `omniSciEdemFileFormat` | `CAE_ENABLE_EDEM` | Off | [Mapping](../conceptual_data_mapping/edem.md) |
+| VTKHDF DEM particle series | `.vtkhdf` | `omniSciVtkHdfFileFormat` | `CAE_ENABLE_VTKHDF` | Off | – |
 | FLASH AMR | `.flash` descriptor | `omniSciFlashFileFormat` | `CAE_ENABLE_FLASH` | Off | [Mapping](../conceptual_data_mapping/flash.md) |
 | CGNS | `.cgns` | `omniSciCgnsFileFormat` | `CAE_ENABLE_CGNS` | Off | [Mapping](../conceptual_data_mapping/cgns.md) |
 | NumPy | `.npy`, `.npz` | `omniSciNumpyFileFormat` | `CAE_ENABLE_NUMPY` | On when Python is found | [Mapping](../conceptual_data_mapping/numpy.md) |
